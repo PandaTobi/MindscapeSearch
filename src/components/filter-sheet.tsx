@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { FilterContent, type EpisodeFacetItem, type YearFacet } from "@/components/filter-content";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import type { QueryState } from "@/lib/url-state";
 
 export function FiltersPill({ activeCount, onOpen }: { activeCount: number; onOpen: () => void }) {
@@ -31,10 +31,7 @@ export function FilterSheet({
   episodes: EpisodeFacetItem[];
   onChange: (patch: Partial<QueryState>) => void;
 }) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (open) panelRef.current?.focus();
-  }, [open]);
+  const trapRef = useFocusTrap<HTMLDivElement>(open);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-40 lg:hidden">
@@ -45,7 +42,7 @@ export function FilterSheet({
         onClick={() => onOpenChange(false)}
       />
       <div
-        ref={panelRef}
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-label="Filters"

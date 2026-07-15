@@ -1,5 +1,7 @@
 "use client";
 
+import { useFocusTrap } from "@/lib/use-focus-trap";
+
 const SHORTCUTS: Array<[string, string]> = [
   ["/ or ⌘K", "Focus search"],
   ["Esc", "Clear query → blur results → close panel (one layer per press)"],
@@ -15,10 +17,12 @@ const SHORTCUTS: Array<[string, string]> = [
 ];
 
 export function ShortcutsOverlay({ onClose }: { onClose: () => void }) {
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <button type="button" aria-label="Close" className="absolute inset-0" onClick={onClose} />
       <div
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-label="Keyboard shortcuts"

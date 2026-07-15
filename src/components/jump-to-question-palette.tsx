@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { secondsToClock } from "@/lib/format";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import type { Segment } from "@/lib/types";
 
 /** ⌘J — jump-to-question palette scoped to the open episode's transcript,
@@ -16,8 +17,7 @@ export function JumpToQuestionPalette({
   onClose: () => void;
 }) {
   const [filter, setFilter] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => inputRef.current?.focus(), []);
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
   const query = filter.trim().toLowerCase();
   const matches = (
     query ? segments.filter((s) => s.questionText.toLowerCase().includes(query)) : segments
@@ -27,6 +27,7 @@ export function JumpToQuestionPalette({
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 pt-24">
       <button type="button" aria-label="Close" className="absolute inset-0" onClick={onClose} />
       <div
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-label="Jump to question"
@@ -40,7 +41,6 @@ export function JumpToQuestionPalette({
         }}
       >
         <input
-          ref={inputRef}
           value={filter}
           onChange={(event) => setFilter(event.target.value)}
           placeholder="Jump to a question…"

@@ -81,7 +81,11 @@ export function TranscriptPanel({
     <div
       ref={panelRef}
       role="dialog"
-      aria-modal="true"
+      // Non-modal by design (DESIGN.md §2.4): the results list stays live and
+      // navigable behind the panel so answers can be compared across episodes.
+      // Focus moves into the panel on open and is restored to the trigger on
+      // close (handled by the caller), but focus is not trapped.
+      aria-modal="false"
       aria-label={episode ? `Transcript: ${episode.title}` : "Transcript"}
       tabIndex={-1}
       className="fixed inset-0 z-40 flex animate-rise flex-col border-border bg-bg outline-none duration-[240ms] ease-panel motion-reduce:animate-none lg:inset-y-0 lg:left-auto lg:right-0 lg:w-[55%] lg:border-l"

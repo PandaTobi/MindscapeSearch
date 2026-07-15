@@ -73,6 +73,10 @@ export function SearchApp() {
   const lastPartial = useRef(false);
   const initialSegmentRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Element that had focus when the transcript panel opened, so focus can be
+  // restored to it on close (the panel is non-modal, so nothing else does).
+  const panelTrigger = useRef<HTMLElement | null>(null);
+  const prevSegment = useRef("");
   const chord = useRef<{ key: string; at: number } | null>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -199,6 +203,18 @@ export function SearchApp() {
     worker.current.postMessage({ type: "episode", episodeId, id });
   }, [state.segment]);
 
+  // Restore focus to the panel's trigger once it closes (open → closed). Runs
+  // after the panel has unmounted, so the target is back in the layout.
+  useEffect(() => {
+    const closed = prevSegment.current && !state.segment;
+    prevSegment.current = state.segment;
+    if (!closed) return;
+    const target = panelTrigger.current;
+    panelTrigger.current = null;
+    if (target && target.isConnected) target.focus();
+    else inputRef.current?.focus();
+  }, [state.segment]);
+
   const update = useCallback((patch: Partial<QueryState>) => {
     setState((v) => ({ ...v, ...patch }));
   }, []);
@@ -235,20 +251,31 @@ export function SearchApp() {
     setNavSeq((n) => n + 1);
   }, []);
 
-  const activateCard = useCallback((withModifier: boolean) => {
-    const active = resultsRef.current[activeIndexRef.current];
-    if (!active) return;
-    if (withModifier) {
-      window.open(
-        `https://www.youtube.com/watch?v=${active.episode.youtubeId ?? ""}`,
-        "_blank",
-        "noopener,noreferrer"
-      );
-      return;
-    }
-    update({ segment: active.segmentId });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Remember the trigger so focus can return to it when the panel closes.
+  const openTranscript = useCallback(
+    (segmentId: string) => {
+      panelTrigger.current = document.activeElement as HTMLElement | null;
+      update({ segment: segmentId });
+    },
+    [update]
+  );
+
+  const activateCard = useCallback(
+    (withModifier: boolean) => {
+      const active = resultsRef.current[activeIndexRef.current];
+      if (!active) return;
+      if (withModifier) {
+        window.open(
+          `https://www.youtube.com/watch?v=${active.episode.youtubeId ?? ""}`,
+          "_blank",
+          "noopener,noreferrer"
+        );
+        return;
+      }
+      openTranscript(active.segmentId);
+    },
+    [openTranscript]
+  );
 
   const onEnterFromInput = useCallback(
     (withModifier: boolean) => {
@@ -475,7 +502,7 @@ export function SearchApp() {
                       activeIndex={activeIndex}
                       navSeq={navSeq}
                       onActivate={setActiveIndex}
-                      onOpenTranscript={(segmentId) => update({ segment: segmentId })}
+                      onOpenTranscript={openTranscript}
                     />
                   ) : status === "Ready" || !inFlight ? (
                     <NoResultsState
