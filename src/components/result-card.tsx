@@ -53,7 +53,11 @@ export function ResultCard({
   return (
     <article
       aria-labelledby={result.questionText ? headingId : undefined}
-      aria-label={result.questionText ? undefined : `${episodeBadge(result.episode.date)}, ${secondsToClock(result.startSec)}`}
+      aria-label={
+        result.questionText
+          ? undefined
+          : `${episodeBadge(result.episode.date)}, ${secondsToClock(result.startSec)}`
+      }
       className={`group relative border-b border-border px-1 py-5 transition-colors duration-[120ms] ${
         isActive ? "bg-bg-raised" : "hover:bg-bg-raised"
       }`}

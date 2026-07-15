@@ -73,7 +73,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         </a>
         {children}
         <noscript>
-          <div style={{ padding: "2rem", textAlign: "center", fontFamily: "system-ui, sans-serif" }}>
+          <div
+            style={{ padding: "2rem", textAlign: "center", fontFamily: "system-ui, sans-serif" }}
+          >
             <h1>{SITE_NAME}</h1>
             <p>{SITE_DESCRIPTION}</p>
             <p>This search runs entirely in your browser and requires JavaScript to be enabled.</p>

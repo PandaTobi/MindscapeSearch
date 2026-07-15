@@ -59,7 +59,9 @@ export function SearchInput({
           aria-expanded={visible}
           // Only reference the listbox while it's actually in the DOM.
           aria-controls={visible ? listId : undefined}
-          aria-activedescendant={visible && highlighted >= 0 ? `${listId}-${highlighted}` : undefined}
+          aria-activedescendant={
+            visible && highlighted >= 0 ? `${listId}-${highlighted}` : undefined
+          }
           aria-autocomplete="list"
           value={value}
           onChange={(event) => onChange(event.target.value)}
