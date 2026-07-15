@@ -149,7 +149,7 @@ function semanticRank(queryVector, years, state) {
         best.set(segmentId, { segmentId, episodeId, startSec: sec[i], offset: off[i], score: dot });
     }
   }
-  return [...best.values()].sort((a, b) => b.score - a.score).slice(0, 120);
+  return [...best.values()].sort((a, b) => b.score - a.score).slice(0, 240);
 }
 /** Reciprocal Rank Fusion — robust, needs no score calibration between engines. */
 function fuse(keywordRanked, semanticRanked, k = 60) {
@@ -166,7 +166,7 @@ function fuse(keywordRanked, semanticRanked, k = 60) {
   return [...scores]
     .map(([segmentId, score]) => ({ ...meta.get(segmentId), segmentId, score }))
     .sort((a, b) => b.score - a.score)
-    .slice(0, 100);
+    .slice(0, 200);
 }
 
 /** First-occurrence highlight ranges of each term inside `text` (post-normalization offsets line up 1:1 since normalize() never changes string length). */
@@ -237,7 +237,7 @@ function keywordRank(shards, terms, state) {
     })
     .filter((record) => (!state.type || state.type === "all" || record.type === state.type) && (!state.episode || record.episodeId === state.episode))
     .sort((left, right) => right.score - left.score || right.startSec - left.startSec)
-    .slice(0, 120);
+    .slice(0, 240);
 }
 
 /** Resolve ranked (segmentId, score, …) records into displayable result cards. */
@@ -273,6 +273,16 @@ self.onmessage = async ({ data }) => {
     self.postMessage({ type: "ready" });
     return;
   }
+  if (data.type === "episode") {
+    const { id, episodeId } = data;
+    const meta = manifest?.episodes.find((item) => item.id === episodeId);
+    const docs = meta ? await docsFor([String(meta.year)]) : [];
+    const segments = docs
+      .filter((doc) => doc.episodeId === episodeId)
+      .sort((a, b) => a.order - b.order);
+    self.postMessage({ id, type: "episode", episodeId, segments });
+    return;
+  }
   if (data.type !== "search" || !manifest) return;
   const { id, state } = data;
   const { query = "", year, mode = "keyword" } = state;
@@ -283,7 +293,7 @@ self.onmessage = async ({ data }) => {
   const suggestionList = suggestions(keyShards, terms.at(-1) || "");
 
   if (!wantsSemantic) {
-    const ranked = keywordRank(keyShards, terms, state).slice(0, 100);
+    const ranked = keywordRank(keyShards, terms, state).slice(0, 200);
     self.postMessage({ id, type: "results", results: await buildResults(ranked, terms), terms, suggestions: suggestionList });
     return;
   }
@@ -293,7 +303,7 @@ self.onmessage = async ({ data }) => {
   // the instant keyword pass immediately, then patch in the fused ranking once
   // the (~2 MB, cached-after-first-use) static embedding table has streamed in.
   if (cold && mode === "hybrid") {
-    const keywordOnly = keywordRank(keyShards, terms, state).slice(0, 100);
+    const keywordOnly = keywordRank(keyShards, terms, state).slice(0, 200);
     self.postMessage({
       id,
       type: "results",
@@ -310,6 +320,6 @@ self.onmessage = async ({ data }) => {
   await vectorsFor(years);
   const queryVector = embedQuery(query);
   const semantic = queryVector ? semanticRank(queryVector, years, state) : [];
-  const ranked = (mode === "semantic" ? semantic : fuse(keywordRank(keyShards, terms, state), semantic)).slice(0, 100);
+  const ranked = (mode === "semantic" ? semantic : fuse(keywordRank(keyShards, terms, state), semantic)).slice(0, 200);
   self.postMessage({ id, type: "results", results: await buildResults(ranked, terms), terms, suggestions: suggestionList });
 };
