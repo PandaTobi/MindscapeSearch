@@ -15,7 +15,6 @@ interface ResultCardProps {
   isActive: boolean;
   onActivate: () => void;
   onOpenTranscript: (segmentId: string) => void;
-  cardRef: (el: HTMLLIElement | null) => void;
 }
 
 export function ResultCard({
@@ -25,8 +24,7 @@ export function ResultCard({
   answersOnly,
   isActive,
   onActivate,
-  onOpenTranscript,
-  cardRef
+  onOpenTranscript
 }: ResultCardProps) {
   const [copied, setCopied] = useState(false);
   useEffect(() => {
@@ -53,7 +51,6 @@ export function ResultCard({
 
   return (
     <li
-      ref={cardRef}
       role="option"
       aria-selected={isActive}
       tabIndex={-1}
