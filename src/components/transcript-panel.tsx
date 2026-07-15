@@ -18,6 +18,8 @@ export function TranscriptPanel({
   targetSegmentId,
   terms,
   pulseOnOpen,
+  paletteOpen,
+  onPaletteOpenChange,
   onClose
 }: {
   episode: EpisodeMeta | null;
@@ -26,11 +28,12 @@ export function TranscriptPanel({
   targetSegmentId: string;
   terms: string[];
   pulseOnOpen: boolean;
+  paletteOpen: boolean;
+  onPaletteOpenChange: (open: boolean) => void;
   onClose: () => void;
 }) {
   const [emphasizedId, setEmphasizedId] = useState(targetSegmentId);
   const [pulse, setPulse] = useState(pulseOnOpen);
-  const [paletteOpen, setPaletteOpen] = useState(false);
   const rowRefs = useRef<Map<string, HTMLLIElement>>(new Map());
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -57,7 +60,7 @@ export function TranscriptPanel({
       if (paletteOpen || isTypingTarget(document.activeElement)) return;
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "j") {
         event.preventDefault();
-        setPaletteOpen(true);
+        onPaletteOpenChange(true);
         return;
       }
       if (event.key === "j" || event.key === "k") {
@@ -70,7 +73,7 @@ export function TranscriptPanel({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [segments, emphasizedId, paletteOpen]);
+  }, [segments, emphasizedId, paletteOpen, onPaletteOpenChange]);
 
   return (
     <div
@@ -177,9 +180,9 @@ export function TranscriptPanel({
           segments={segments}
           onJump={(segmentId) => {
             setEmphasizedId(segmentId);
-            setPaletteOpen(false);
+            onPaletteOpenChange(false);
           }}
-          onClose={() => setPaletteOpen(false)}
+          onClose={() => onPaletteOpenChange(false)}
         />
       )}
     </div>

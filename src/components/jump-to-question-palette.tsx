@@ -33,10 +33,8 @@ export function JumpToQuestionPalette({
         aria-label="Jump to question"
         className="relative w-full max-w-lg overflow-hidden rounded-lg border border-border bg-bg-raised"
         onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            event.stopPropagation();
-            onClose();
-          }
+          // Escape is handled centrally (search-app's global keymap owns
+          // overlay-priority); this only needs the palette-specific Enter.
           if (event.key === "Enter" && matches[0]) {
             onJump(matches[0].segmentId);
           }
