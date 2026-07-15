@@ -37,23 +37,36 @@ export interface EpisodeMeta {
 }
 
 export interface Shard {
-  kind: "docs" | "keyword" | "vectors";
+  kind: "docs" | "keyword" | "autocomplete" | "meta" | "vectors" | "vocab";
   key: string;
   url: string;
+  compressedUrl?: string;
   bytes: number;
+  compressedBytes?: number;
   sha256: string;
   vectorCount?: number;
 }
 export interface Manifest {
   schemaVersion: number;
   buildId: string;
-  model: { id: string; dimension: number; quantization: "int8" };
+  model: {
+    id: string;
+    family?: "static" | "transformer";
+    dimension: number;
+    quantization: "int8";
+    window?: number;
+  };
   episodes: EpisodeMeta[];
-  facets: { years: number[]; types: SegmentType[] };
+  facets: {
+    years: number[];
+    types: SegmentType[];
+    episodes?: Array<{ id: string; number: number; title: string; year: number }>;
+  };
   shards: Shard[];
 }
 export interface SearchResult extends Segment {
   episode: EpisodeMeta;
   score: number;
   match?: string;
+  highlights?: { question: Array<[number, number]>; answer: Array<[number, number]> };
 }

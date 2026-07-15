@@ -33,16 +33,15 @@ export type IngestResult = {
 };
 
 function cleanText(value: string) {
-  return value.replace(/\u00a0/g, " ").normalize("NFC").replace(/\s+/g, " ").trim();
+  return value
+    .replace(/\u00a0/g, " ")
+    .normalize("NFC")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function cleanMultiline(value: string) {
-  return value
-    .replace(/\r/g, "")
-    .split("\n")
-    .map(cleanText)
-    .filter(Boolean)
-    .join("\n");
+  return value.replace(/\r/g, "").split("\n").map(cleanText).filter(Boolean).join("\n");
 }
 
 function toIsoDate(value: string, fallbackUrl: string) {
@@ -73,7 +72,11 @@ export function discoverFromArchive(html: string, archiveUrl: string): Discovere
     const article = link.closest("article, .post, .type-post") ?? link.parentElement;
     const dateNode = article?.querySelector("time[datetime], time, .entry-date, .posted-on");
     const dateText = dateNode?.getAttribute("datetime") ?? dateNode?.textContent ?? "";
-    found.set(sourceUrl, { title, sourceUrl, publishDate: toIsoDate(cleanText(dateText), sourceUrl) });
+    found.set(sourceUrl, {
+      title,
+      sourceUrl,
+      publishDate: toIsoDate(cleanText(dateText), sourceUrl)
+    });
   }
   return [...found.values()];
 }
@@ -96,7 +99,8 @@ export async function discoverEpisodes(
   while (current && !visited.has(current) && visited.size < maxPages) {
     visited.add(current);
     const html = await fetchText(current);
-    for (const episode of discoverFromArchive(html, current)) episodes.set(episode.sourceUrl, episode);
+    for (const episode of discoverFromArchive(html, current))
+      episodes.set(episode.sourceUrl, episode);
     current = nextArchiveUrl(html, current);
   }
   return [...episodes.values()].sort((a, b) => a.publishDate.localeCompare(b.publishDate));
@@ -105,7 +109,8 @@ export async function discoverEpisodes(
 function parseTimestamp(value: string) {
   const parts = value.split(":").map(Number);
   if (parts.some(Number.isNaN) || parts.length < 2 || parts.length > 3) return null;
-  const seconds = parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1];
+  const seconds =
+    parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1];
   return Math.max(0, Math.floor(seconds));
 }
 
@@ -122,7 +127,9 @@ export function parseTranscriptCues(transcriptText: string): TranscriptCue[] {
     .map((match, index) => ({
       startSec: parseTimestamp(match[1]) ?? 0,
       speaker: canonicalSpeaker(match[2]),
-      text: cleanMultiline(transcriptText.slice((match.index ?? 0) + match[0].length, matches[index + 1]?.index))
+      text: cleanMultiline(
+        transcriptText.slice((match.index ?? 0) + match[0].length, matches[index + 1]?.index)
+      )
     }))
     .filter((cue) => cue.text.length > 0);
 }
@@ -139,7 +146,8 @@ export function extractTranscript(html: string) {
   // The site used both labels during its WordPress/accordion-template transition.
   const marker = /Click to Show (?:Full |Episode )?Transcript/i;
   const match = marker.exec(bodyText);
-  if (!match || match.index === undefined) throw new Error("Official transcript marker was not found");
+  if (!match || match.index === undefined)
+    throw new Error("Official transcript marker was not found");
   const afterMarker = bodyText.slice(match.index + match[0].length).replace(/^\s*/u, "");
   const end = afterMarker.search(/\n\s*(?:←\s*Previous Post|Leave a Comment|Related Posts)\b/i);
   const transcriptText = cleanMultiline(end >= 0 ? afterMarker.slice(0, end) : afterMarker);
@@ -154,19 +162,26 @@ type LegacyQuestion = { speaker: string; text: string };
 export function extractLegacyQuestions(html: string): LegacyQuestion[] {
   const document = documentFromHtml(html);
   const paragraphs = [...document.querySelectorAll("article .entry-content p, article p")];
-  const start = paragraphs.findIndex((paragraph) => /Click to Show AMA Q/i.test(paragraph.textContent ?? ""));
+  const start = paragraphs.findIndex((paragraph) =>
+    /Click to Show AMA Q/i.test(paragraph.textContent ?? "")
+  );
   if (start < 0) return [];
   const questions: LegacyQuestion[] = [];
   for (const paragraph of paragraphs.slice(start + 1)) {
     const source = paragraph.innerHTML;
-    if (/\[\/accordion-item\]|Click to Show (?:Full |Episode )?Transcript/i.test(source)) break;
+    const closesAccordion = /\[\/accordion-item\]/.test(source);
+    if (/Click to Show (?:Full |Episode )?Transcript/i.test(source)) break;
     const lines = source
+      .replace(/\[\/accordion-item\][\s\S]*$/i, "")
       .split(/<br\s*\/?\s*>/i)
-      .map((line) => cleanText(new JSDOM(`<body>${line}</body>`).window.document.body.textContent ?? ""))
+      .map((line) =>
+        cleanText(new JSDOM(`<body>${line}</body>`).window.document.body.textContent ?? "")
+      )
       .filter(Boolean);
     if (lines.length < 2) continue;
     const [speaker, ...question] = lines;
     questions.push({ speaker: canonicalSpeaker(speaker), text: question.join(" ") });
+    if (closesAccordion) break;
   }
   return questions;
 }
@@ -177,50 +192,247 @@ function countTokens(value: string) {
 
 type PendingSegment = Omit<CanonicalSegment, "segmentId" | "endSec" | "order" | "tokens">;
 
-function questionFromCue(text: string) {
-  const match = text.match(
-    /^(?<speaker>[A-Z][\p{L}\p{M}'’ .-]{0,80}?)\s+(?:asks|asked|writes|wrote|wants to know)\s*[:,]?\s*[“"]?(?<question>[\s\S]*?\?)[”"]?(?:\s|$)/u
+type QuestionPart = { speaker: string; question: string };
+type QuestionCue = {
+  parts: QuestionPart[];
+  remainder: string;
+  collectsMoreQuestions: boolean;
+  isFollowUp: boolean;
+};
+
+const questionVerb = "asks?|asked|writes?|wrote|says|wants to know";
+// Names in the transcript are usually title-cased, but can include initials, commas,
+// particles, and suffixes (for example, "Constantine, Heesen or Heesen" and "Tim G. Nizos").
+const nameWord = "[A-Z][\\p{L}\\p{M}'’.-]*";
+const questionerName = `${nameWord}(?:[ ,]+(?:${nameWord}|or|de|van|von|Jr\\.?|Sr\\.?))*?`;
+
+function cleanQuestionerName(value: string) {
+  const name = canonicalSpeaker(
+    value
+      .replace(/^(?:and|then|so|okay)\s+/i, "")
+      .replace(/\b(?:who|and)\s*$/i, "")
+      .replace(/[,\s]+$/u, "")
   );
-  if (!match?.groups) return null;
+  return /^(?:he|she|they|it|i|we|you|this|that|there)$/i.test(name) ? "" : name;
+}
+
+function closingQuote(text: string, openingIndex: number) {
+  const opening = text[openingIndex];
+  const closing = opening === "“" ? "”" : opening === "‘" ? "’" : opening;
+  return text.indexOf(closing, openingIndex + 1);
+}
+
+/**
+ * Returns the end of an unquoted question. A question can contain several question
+ * marks; the answer normally starts with one of these discourse markers. Falling back
+ * to the final question mark preserves multi-part questions instead of splitting them
+ * at the first sentence.
+ */
+function endOfUnquotedQuestion(text: string, from: number, until = text.length) {
+  const marks = [...text.slice(from, until).matchAll(/\?/g)].map(
+    (match) => from + (match.index ?? 0)
+  );
+  if (!marks.length) return null;
+  const answerStart =
+    /^(?:[”"]?\s*)?(?:right|okay|so|well|now|sure|yes|no|absolutely|i think|i would|the answer|let me|first)\b/i;
+  for (const mark of marks) {
+    if (answerStart.test(text.slice(mark + 1))) return mark + 1;
+  }
+  const finalMark = marks.at(-1)!;
+  // A question with no in-cue answer is valid when it is at the end of the turn.
+  // Otherwise it is commonly a rhetorical question in host commentary.
+  return cleanText(text.slice(finalMark + 1, until)).length <= 100 ? finalMark + 1 : null;
+}
+
+function questionPartsInCue(text: string) {
+  type Candidate = { speaker: string; start: number; contentStart: number };
+  const candidates: Candidate[] = [];
+  const direct = new RegExp(
+    `(?<speaker>${questionerName})\\s*,?\\s*(?:who\\s+)?(?:${questionVerb})\\b`,
+    "gu"
+  );
+  const introduced = new RegExp(
+    `\\b(?:one|the\\s+(?:first|second|next)|another)\\s+(?:is\\s+)?(?:by|from)\\s+(?<speaker>${questionerName})(?:\\s*,?\\s*(?:and\\s+)?(?:he|she|they))?\\s+(?:${questionVerb})\\b`,
+    "giu"
+  );
+
+  for (const expression of [direct, introduced]) {
+    for (const match of text.matchAll(expression)) {
+      if (!match.groups?.speaker || match.index === undefined) continue;
+      candidates.push({
+        speaker: cleanQuestionerName(match.groups.speaker),
+        start: match.index,
+        contentStart: match.index + match[0].length
+      });
+    }
+  }
+
+  // Two patterns can identify the same introduction. Keep the more specific match.
+  candidates.sort((a, b) => a.start - b.start || b.contentStart - a.contentStart);
+  const unique: Candidate[] = [];
+  for (const candidate of candidates) {
+    // The "one is by …" expression encompasses the direct "Name says" expression.
+    // Prefer that encompassing match rather than emitting the same question twice.
+    if (
+      unique.some(
+        (previous) => candidate.start >= previous.start && candidate.start < previous.contentStart
+      )
+    )
+      continue;
+    if (!unique.some((previous) => candidate.start === previous.start)) unique.push(candidate);
+  }
+  const parts: Array<QuestionPart & { end: number }> = [];
+  const groupsQuestions =
+    /\b(?:group|combine|put)\s+(?:two|three|several|a few|these|multiple)\s+questions?\s+(?:together|here)?\b/i.test(
+      text
+    );
+  const mentionsFollowUp =
+    /\b(?:follow[- ]?up|following up|another|one more|related)\s+(?:question|comment)\b/i.test(
+      text
+    );
+
+  for (const [index, candidate] of unique.entries()) {
+    if (!candidate.speaker) continue;
+    // A named quotation far into an answer (for example, "Deduction says …")
+    // is commentary, not another submitted question. A nearby explicit follow-up
+    // remains part of the same section.
+    if (
+      parts.length &&
+      !groupsQuestions &&
+      (!mentionsFollowUp || candidate.start - parts.at(-1)!.end > 500)
+    )
+      break;
+    const nextCandidateStart = unique[index + 1]?.start ?? text.length;
+    let contentStart = candidate.contentStart;
+    while (/[\s,:-]/u.test(text[contentStart] ?? "")) contentStart += 1;
+    const opening = text[contentStart];
+    const quoted = opening === '"' || opening === "“" || opening === "‘";
+    const close = quoted ? closingQuote(text, contentStart) : -1;
+    const end =
+      close >= 0 && close < nextCandidateStart
+        ? close + 1
+        : endOfUnquotedQuestion(text, contentStart, nextCandidateStart);
+    if (!end) continue;
+    const question = cleanText(
+      text.slice(contentStart + (quoted ? 1 : 0), close >= 0 ? close : end)
+    );
+    if (!question || (!quoted && !question.includes("?"))) continue;
+    const fullerName = unique.find(
+      (other) =>
+        other.start < candidate.start &&
+        other.speaker.split(" ")[0] === candidate.speaker &&
+        other.speaker.length > candidate.speaker.length
+    )?.speaker;
+    parts.push({ speaker: fullerName ?? candidate.speaker, question, end });
+  }
+
+  return parts;
+}
+
+function questionFromCue(text: string): QuestionCue | null {
+  const parts = questionPartsInCue(text);
+  if (!parts.length) return null;
+  const lastEnd = Math.max(...parts.map((part) => part.end));
   return {
-    speaker: canonicalSpeaker(match.groups.speaker),
-    question: cleanText(match.groups.question),
-    remainder: cleanText(text.slice(match[0].length))
+    parts: parts.map(({ speaker, question }) => ({ speaker, question })),
+    remainder: cleanText(text.slice(lastEnd)),
+    collectsMoreQuestions:
+      /\b(?:group|combine|put)\s+(?:two|three|several|a few|these|multiple)\s+questions?\s+(?:together|here)?\b/i.test(
+        text
+      ),
+    isFollowUp:
+      /\b(?:follow[- ]?up|following up|another|one more|related)\s+(?:question|comment)\b/i.test(
+        text
+      )
   };
 }
 
+function formatQuestion(parts: QuestionPart[]) {
+  if (parts.length === 1) return parts[0].question;
+  return parts.map((part) => `${part.speaker}: ${part.question}`).join("\n\n");
+}
+
 /** Converts timestamped speaker turns into deterministic Q&A/search segments. */
-export function segmentsFromTranscript(transcriptText: string): Omit<CanonicalSegment, "segmentId">[] {
+export function segmentsFromTranscript(
+  transcriptText: string
+): Omit<CanonicalSegment, "segmentId">[] {
   const cues = parseTranscriptCues(transcriptText);
   const pending: PendingSegment[] = [];
-  let activeQuestion: PendingSegment | null = null;
+  let activeQuestion: (PendingSegment & { acceptsMoreQuestions: boolean }) | null = null;
+  let intro: PendingSegment | null = null;
+  const append = (segment: PendingSegment, field: "answerText", text: string, speaker: string) => {
+    if (!text) return;
+    segment[field] = cleanText(`${segment[field]} ${text}`);
+    segment.speakerNames = [...new Set([...segment.speakerNames, speaker])];
+  };
+  const flushIntro = () => {
+    if (intro) pending.push(intro);
+    intro = null;
+  };
+  const flushQuestion = () => {
+    if (activeQuestion) {
+      const { acceptsMoreQuestions: _acceptsMoreQuestions, ...segment } = activeQuestion;
+      pending.push(segment);
+    }
+    activeQuestion = null;
+  };
   const appendAnswer = (text: string, speaker: string, startSec: number) => {
     if (!text) return;
     if (!activeQuestion) {
-      pending.push({ type: "intro", questionText: "", answerText: text, startSec, speakerNames: [speaker] });
+      if (!intro)
+        intro = {
+          type: "intro",
+          questionText: "",
+          answerText: text,
+          startSec,
+          speakerNames: [speaker]
+        };
+      else append(intro, "answerText", text, speaker);
       return;
     }
-    activeQuestion.answerText = cleanText(`${activeQuestion.answerText} ${text}`);
-    activeQuestion.speakerNames = [...new Set([...activeQuestion.speakerNames, speaker])];
+    append(activeQuestion, "answerText", text, speaker);
+    activeQuestion.acceptsMoreQuestions = false;
   };
 
   for (const cue of cues) {
     const question = questionFromCue(cue.text);
     const isExternalQuestion = cue.speaker !== "Sean Carroll" && /\?$/.test(cue.text);
     if (question || isExternalQuestion) {
-      if (activeQuestion) pending.push(activeQuestion);
+      const parts = question?.parts ?? [{ speaker: cue.speaker, question: cue.text }];
+      // Some grouped sections are introduced informally (for example, "group, let's
+      // see, two questions together"). If the preceding submitted question has no
+      // answer yet, a second question cue is overwhelmingly a continuation of it.
+      const joinsPreviousSection = Boolean(
+        activeQuestion &&
+          (activeQuestion.acceptsMoreQuestions ||
+            !activeQuestion.answerText ||
+            question?.isFollowUp)
+      );
+      if (joinsPreviousSection && activeQuestion) {
+        activeQuestion.questionText = `${activeQuestion.questionText}\n\n${formatQuestion(parts)}`;
+        activeQuestion.speakerNames = [
+          ...new Set([...activeQuestion.speakerNames, ...parts.map((part) => part.speaker)])
+        ];
+        if (question?.remainder) appendAnswer(question.remainder, cue.speaker, cue.startSec);
+        else activeQuestion.acceptsMoreQuestions = Boolean(question?.collectsMoreQuestions);
+        continue;
+      }
+      flushQuestion();
+      flushIntro();
       activeQuestion = {
         type: "question",
-        questionText: question?.question ?? cue.text,
+        questionText: formatQuestion(parts),
         answerText: question?.remainder ?? "",
         startSec: cue.startSec,
-        speakerNames: [question?.speaker ?? cue.speaker, "Sean Carroll"]
+        speakerNames: [...new Set([...parts.map((part) => part.speaker), "Sean Carroll"])],
+        acceptsMoreQuestions: Boolean(question?.collectsMoreQuestions && !question.remainder)
       };
     } else {
       appendAnswer(cue.text, cue.speaker, cue.startSec);
     }
   }
-  if (activeQuestion) pending.push(activeQuestion);
+  flushQuestion();
+  flushIntro();
   if (!pending.length) throw new Error("Transcript could not be converted to segments");
 
   return pending.map((segment, order) => ({
@@ -232,30 +444,40 @@ export function segmentsFromTranscript(transcriptText: string): Omit<CanonicalSe
 }
 
 function findAudioUrl(document: Document, sourceUrl: string) {
-  const candidate = document.querySelector<HTMLAudioElement>("audio[src]")?.src
-    ?? document.querySelector<HTMLSourceElement>('audio source[src], source[type^="audio/"][src]')?.src
-    ?? [...document.querySelectorAll<HTMLAnchorElement>('a[href$=".mp3" i], a[href*=".mp3?" i]')][0]?.href;
+  const candidate =
+    document.querySelector<HTMLAudioElement>("audio[src]")?.src ??
+    document.querySelector<HTMLSourceElement>('audio source[src], source[type^="audio/"][src]')
+      ?.src ??
+    [...document.querySelectorAll<HTMLAnchorElement>('a[href$=".mp3" i], a[href*=".mp3?" i]')][0]
+      ?.href;
   return candidate ? absoluteUrl(candidate, sourceUrl) : sourceUrl;
 }
 
 function findYoutubeId(document: Document) {
   const sources = [
-    ...[...document.querySelectorAll<HTMLElement>("iframe[src], a[href]")].map((element) =>
-      element.getAttribute("src") ?? element.getAttribute("href") ?? ""
+    ...[...document.querySelectorAll<HTMLElement>("iframe[src], a[href]")].map(
+      (element) => element.getAttribute("src") ?? element.getAttribute("href") ?? ""
     ),
     document.documentElement.innerHTML
   ];
   for (const source of sources) {
-    const match = source.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?v=|embed\/))([A-Za-z0-9_-]{11})/);
+    const match = source.match(
+      /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?v=|embed\/))([A-Za-z0-9_-]{11})/
+    );
     if (match) return match[1];
   }
   return null;
 }
 
-function normalizeQuestionListEpisode(discovered: DiscoveredEpisode, html: string, number: number): CanonicalEpisode {
+function normalizeQuestionListEpisode(
+  discovered: DiscoveredEpisode,
+  html: string,
+  number: number
+): CanonicalEpisode {
   const document = documentFromHtml(html);
   const questions = extractLegacyQuestions(html);
-  if (!questions.length) throw new Error(`${episodeIdFor(discovered.publishDate)}: no official questions found`);
+  if (!questions.length)
+    throw new Error(`${episodeIdFor(discovered.publishDate)}: no official questions found`);
   const episodeId = episodeIdFor(discovered.publishDate);
   const segments = questions.map((question, order) => ({
     segmentId: `${episodeId}#q${String(order + 1).padStart(2, "0")}`,
@@ -275,7 +497,9 @@ function normalizeQuestionListEpisode(discovered: DiscoveredEpisode, html: strin
     publishDate: discovered.publishDate,
     sourceUrl: discovered.sourceUrl,
     transcriptUrl: discovered.sourceUrl,
-    transcriptText: questions.map((question) => `${question.speaker}: ${question.text}`).join("\n\n"),
+    transcriptText: questions
+      .map((question) => `${question.speaker}: ${question.text}`)
+      .join("\n\n"),
     speakers: [...new Set(questions.map((question) => question.speaker))],
     audioUrl: findAudioUrl(document, discovered.sourceUrl),
     youtubeId: findYoutubeId(document),
@@ -287,7 +511,11 @@ function normalizeQuestionListEpisode(discovered: DiscoveredEpisode, html: strin
   return episodeSchema.parse(canonical);
 }
 
-export function normalizeEpisode(discovered: DiscoveredEpisode, html: string, number: number): CanonicalEpisode {
+export function normalizeEpisode(
+  discovered: DiscoveredEpisode,
+  html: string,
+  number: number
+): CanonicalEpisode {
   const document = documentFromHtml(html);
   const transcript = extractTranscript(html);
   const segmentsWithoutIds = segmentsFromTranscript(transcript.transcriptText);
@@ -314,7 +542,10 @@ export function normalizeEpisode(discovered: DiscoveredEpisode, html: string, nu
     speakers,
     audioUrl: findAudioUrl(document, discovered.sourceUrl),
     youtubeId: findYoutubeId(document),
-    durationSec: Math.max(1, ...parseTranscriptCues(transcript.transcriptText).map((cue) => cue.startSec)),
+    durationSec: Math.max(
+      1,
+      ...parseTranscriptCues(transcript.transcriptText).map((cue) => cue.startSec)
+    ),
     segments,
     contentHash: ""
   };
@@ -328,7 +559,8 @@ export function episodeIdFor(publishDate: string) {
 
 async function defaultFetchText(url: string) {
   const response = await fetch(url, { headers: { "user-agent": userAgent } });
-  if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+  if (!response.ok)
+    throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
   return response.text();
 }
 
@@ -336,7 +568,9 @@ async function existingEpisodes(directory: string) {
   try {
     const files = (await readdir(directory)).filter((file) => file.endsWith(".json"));
     return await Promise.all(
-      files.map(async (file) => episodeSchema.parse(JSON.parse(await readFile(join(directory, file), "utf8"))))
+      files.map(async (file) =>
+        episodeSchema.parse(JSON.parse(await readFile(join(directory, file), "utf8")))
+      )
     );
   } catch (error: unknown) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return [] as CanonicalEpisode[];
@@ -392,7 +626,11 @@ export async function ingest(options: IngestOptions = {}): Promise<IngestResult>
   const fetchText = options.fetchText ?? defaultFetchText;
   const destination = options.contentDirectory ?? contentDir;
   const rawCacheDirectory = options.rawCacheDirectory ?? join(process.cwd(), "raw-cache");
-  const discovered = await discoverEpisodes(fetchText, options.podcastUrl ?? podcastUrl, options.maxArchivePages);
+  const discovered = await discoverEpisodes(
+    fetchText,
+    options.podcastUrl ?? podcastUrl,
+    options.maxArchivePages
+  );
   const existing = await existingEpisodes(destination);
   const knownIds = new Set(existing.map((episode) => episode.episodeId));
   const knownUrls = new Set(existing.map((episode) => episode.sourceUrl));
@@ -417,11 +655,18 @@ export async function ingest(options: IngestOptions = {}): Promise<IngestResult>
     await writeFile(join(destination, `${basename(episode.episodeId)}.json`), stableJson(episode));
     processed.push(episode.episodeId);
   }
-  return { discovered: discovered.length, processed: processed.length, skipped: discovered.length - processed.length, episodeIds: processed };
+  return {
+    discovered: discovered.length,
+    processed: processed.length,
+    skipped: discovered.length - processed.length,
+    episodeIds: processed
+  };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   ingest().then((result) =>
-    console.log(`Discovered ${result.discovered} AMA episodes; processed ${result.processed}; skipped ${result.skipped}.`)
+    console.log(
+      `Discovered ${result.discovered} AMA episodes; processed ${result.processed}; skipped ${result.skipped}.`
+    )
   );
 }
