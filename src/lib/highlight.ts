@@ -16,28 +16,32 @@ export function findRanges(text: string, terms: string[]): Array<[number, number
   return found;
 }
 
-/** Total occurrence count of every term in `text` — drives the "N matches in
- * answer" annotation (SPEC.md §9: dedup passages, report the total). */
-export function countMatches(text: string, terms: string[]): number {
-  if (!terms.length) return 0;
+/** Every occurrence of each term, not just the first — for the full
+ * transcript reading view, where a term can recur many times across a long
+ * answer (unlike a short result-card snippet, where the first hit suffices). */
+export function findAllRanges(text: string, terms: string[]): Array<[number, number]> {
   const normalized = text
     .toLocaleLowerCase()
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9]/g, " ");
-  let total = 0;
+  const found: Array<[number, number]> = [];
   for (const term of terms) {
     if (!term) continue;
     let from = 0;
     for (;;) {
       const at = normalized.indexOf(term, from);
       if (at < 0) break;
-      total += 1;
+      found.push([at, at + term.length]);
       from = at + term.length;
     }
   }
-  return total;
+  return found;
 }
+
+/** Total occurrence count of every term in `text` — drives the "N matches in
+ * answer" annotation (SPEC.md §9: dedup passages, report the total). */
+export const countMatches = (text: string, terms: string[]) => findAllRanges(text, terms).length;
 
 export function mergeRanges(ranges: Array<[number, number]>): Array<[number, number]> {
   return [...ranges]

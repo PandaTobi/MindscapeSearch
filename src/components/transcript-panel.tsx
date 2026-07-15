@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { HighlightedText } from "@/components/highlighted-text";
 import { JumpToQuestionPalette } from "@/components/jump-to-question-palette";
-import { findRanges } from "@/lib/highlight";
+import { findAllRanges } from "@/lib/highlight";
 import { mediaUrl, monthYear, secondsToClock } from "@/lib/format";
 import { segmentDeepLink } from "@/lib/url-state";
 import type { EpisodeMeta, Segment } from "@/lib/types";
@@ -155,7 +155,7 @@ export function TranscriptPanel({
                     className={
                       isEmphasized
                         ? "flex-1 text-title text-text-primary"
-                        : "flex-1 text-body text-text-secondary hover:text-text-primary"
+                        : "line-clamp-2 flex-1 text-body text-text-secondary hover:text-text-primary"
                     }
                   >
                     {segment.questionText}
@@ -166,7 +166,7 @@ export function TranscriptPanel({
                 </button>
                 {isEmphasized && (
                   <div className="mt-3 whitespace-pre-line text-body-read text-text-primary">
-                    <HighlightedText text={segment.answerText} ranges={findRanges(segment.answerText, terms)} />
+                    <HighlightedText text={segment.answerText} ranges={findAllRanges(segment.answerText, terms)} />
                   </div>
                 )}
               </li>

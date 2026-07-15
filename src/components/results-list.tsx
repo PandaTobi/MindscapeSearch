@@ -21,6 +21,7 @@ export function ResultsList({
   mode,
   answersOnly,
   activeIndex,
+  navSeq,
   onActivate,
   onOpenTranscript
 }: {
@@ -29,6 +30,11 @@ export function ResultsList({
   mode: SearchMode;
   answersOnly: boolean;
   activeIndex: number;
+  /** Bumped by the caller only on explicit keyboard navigation (arrow keys)
+   * — distinguishes "user moved the cursor" from the activeIndex(0) reset
+   * that arrives together with a brand new result set, which should NOT
+   * yank the scroll position. */
+  navSeq: number;
   onActivate: (index: number) => void;
   onOpenTranscript: (segmentId: string) => void;
 }) {
@@ -78,13 +84,26 @@ export function ResultsList({
     overscan: 8,
     scrollMargin
   });
+  // The default scroll-anchoring compensation (nudge window.scrollY to offset
+  // an above-the-fold item's estimate→actual size delta) fires the moment
+  // each card is first measured — including during the very first commit,
+  // where it reads as an unwanted jump away from the top the user just
+  // landed at. We don't need that anchoring: results always start at the top
+  // of a fresh query. Not exposed as a constructor option in this version,
+  // and setting it via an effect would run after that first commit's ref
+  // callbacks already fired, so it's assigned directly during render instead
+  // — an idempotent instance-config mutation, not a render-output change.
+  virtualizer.shouldAdjustScrollPositionOnItemSizeChange = () => false;
 
+  // Scroll only in response to an explicit navigation event (see navSeq's
+  // doc comment) — never as a side effect of a fresh result set landing.
   useEffect(() => {
+    if (navSeq === 0) return;
     if (activeIndex >= 0 && activeIndex < visible.length) {
       virtualizer.scrollToIndex(activeIndex, { align: "auto" });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeIndex]);
+  }, [navSeq]);
 
   const items = virtualizer.getVirtualItems();
 
@@ -95,7 +114,7 @@ export function ResultsList({
         role="listbox"
         aria-label="Search results"
         className="relative"
-        style={{ height: virtualizer.getTotalSize() }}
+        style={{ height: virtualizer.getTotalSize(), overflowAnchor: "none" }}
       >
         {items.map((virtualRow) => {
           const result = visible[virtualRow.index];
