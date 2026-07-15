@@ -22,6 +22,10 @@ jobs:
       - run: npm run ci
         env:
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+          # Drives canonical URLs, Open Graph tags, robots.txt, and sitemap.xml.
+          # `github.repository_owner`.github.io is the Pages origin for a
+          # project site; a CNAME/custom domain would override this.
+          NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io
       - uses: actions/upload-pages-artifact@v3
         with: { path: out }
   deploy:
