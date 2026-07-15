@@ -3,5 +3,7 @@ node_modules
 out
 coverage
 public/data
+content/episodes
+raw-cache
 SPEC.md
 *.lock

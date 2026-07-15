@@ -4,4 +4,9 @@ import { fileURLToPath } from "node:url";
 
 const compat = new FlatCompat({ baseDirectory: dirname(fileURLToPath(import.meta.url)) });
 
-export default [...compat.extends("next/core-web-vitals", "next/typescript")];
+export default [
+  {
+    ignores: ["content/episodes/**", "raw-cache/**", "public/data/**"]
+  },
+  ...compat.extends("next/core-web-vitals", "next/typescript")
+];
