@@ -46,7 +46,7 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" }
         },
-        pulse-bg: {
+        "pulse-bg": {
           "0%": { backgroundColor: "color-mix(in srgb, var(--accent) 8%, transparent)" },
           "100%": { backgroundColor: "transparent" }
         },
