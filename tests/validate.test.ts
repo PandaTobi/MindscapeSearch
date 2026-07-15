@@ -7,6 +7,9 @@ const episode = {
   title: "Test",
   publishDate: "2024-01-01",
   sourceUrl: "https://example.com/source",
+  transcriptUrl: "https://example.com/source",
+  transcriptText: "0:00 Sean Carroll: Hello.",
+  speakers: ["Sean Carroll"],
   audioUrl: "https://example.com/audio",
   youtubeId: null,
   durationSec: 100,
@@ -20,7 +23,8 @@ const episode = {
       startSec: 2,
       endSec: 5,
       order: 0,
-      tokens: 2
+      tokens: 2,
+      speakerNames: ["Sean Carroll"]
     }
   ]
 };

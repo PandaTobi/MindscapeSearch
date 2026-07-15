@@ -15,7 +15,7 @@ npm run dev
 
 Canonical source files belong in `content/episodes/` and must follow the episode schema in `pipeline/lib/schema.ts`. `npm run data:validate` is the integrity gate; `npm run data:build` rebuilds generated artifacts. Generated indexes are ignored by Git because they are recreated in CI.
 
-The checked-in corpus starts empty deliberately: production transcript ingestion needs reviewed source adapters and attribution. The static application handles that state safely.
+Run `npm run data:ingest` to crawl the complete paginated podcast archive. It discovers AMA posts, snapshots only new episode pages in `raw-cache/`, and writes one normalized canonical JSON file per newly discovered monthly AMA. Existing canonical episode IDs/source URLs are skipped, making scheduled runs incremental.
 
 ## Quality checks
 
@@ -23,4 +23,4 @@ The checked-in corpus starts empty deliberately: production transcript ingestion
 npm run ci
 ```
 
-The GitHub Actions Pages workflow runs these checks and publishes the static `out/` folder. The monthly ingest workflow is a safe no-op until a reviewed source adapter is added, so it cannot silently fetch or publish unreviewed transcript data.
+The GitHub Actions Pages workflow runs these checks and publishes the static `out/` folder. The monthly ingest workflow opens a reviewable PR containing any newly ingested canonical content.

@@ -10,7 +10,8 @@ export const segmentSchema = z.object({
   startSec: z.number().int().nonnegative().nullable(),
   endSec: z.number().int().positive().nullable(),
   order: z.number().int().nonnegative(),
-  tokens: z.number().int().nonnegative()
+  tokens: z.number().int().nonnegative(),
+  speakerNames: z.array(z.string().min(1)).default([])
 });
 
 export const episodeSchema = z.object({
@@ -19,6 +20,9 @@ export const episodeSchema = z.object({
   title: z.string().min(1),
   publishDate: z.string().date(),
   sourceUrl: z.string().url(),
+  transcriptUrl: z.string().url(),
+  transcriptText: z.string().min(1),
+  speakers: z.array(z.string().min(1)).min(1),
   audioUrl: z.string().url(),
   youtubeId: z.string().min(1).nullable(),
   durationSec: z.number().int().positive(),

@@ -5,7 +5,5 @@ coverage
 *.tsbuildinfo
 .env*
 !.env.example
-raw-cache/**
-!raw-cache/.gitkeep
 public/data/**
 !public/data/.gitkeep
