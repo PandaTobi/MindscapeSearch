@@ -28,11 +28,15 @@ import {
   type QueryState
 } from "@/lib/url-state";
 import type { EpisodeMeta, Manifest, Segment, SearchMode, SearchResult } from "@/lib/types";
+import type { WorkerRequest, WorkerResponse } from "@/lib/worker-protocol";
 
 const asset = (path: string) => `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}${path}`;
 const MODE_CHORD_KEYS: Record<string, SearchMode> = { k: "keyword", h: "hybrid", s: "semantic" };
 const SEMANTIC_CACHED_KEY = "mindscape:semantic-cached";
 const CHORD_WINDOW_MS = 900;
+
+/** Typed postMessage — the only writer to the worker's request channel. */
+const postToWorker = (worker: Worker, message: WorkerRequest) => worker.postMessage(message);
 
 const isTypingTarget = (el: Element | null) =>
   !!el &&
@@ -99,7 +103,7 @@ export function SearchApp() {
       .then((m: Manifest) => {
         setManifest(m);
         worker.current = new Worker(asset("/search-worker.js"));
-        worker.current.postMessage({ type: "init", manifest: m });
+        postToWorker(worker.current, { type: "init", manifest: m });
       })
       .catch(() => setStatus("The search index has not been built yet."));
     return () => worker.current?.terminate();
@@ -113,7 +117,7 @@ export function SearchApp() {
       const id = ++queryId.current;
       dispatchedAt.current = performance.now();
       setInFlight(true);
-      worker.current?.postMessage({ type: "search", state, id });
+      if (worker.current) postToWorker(worker.current, { type: "search", state, id });
     }, 120);
     return () => window.clearTimeout(timer);
   }, [state]);
@@ -121,7 +125,7 @@ export function SearchApp() {
   // ── Worker responses ───────────────────────────────────────────────────
   useEffect(() => {
     if (!worker.current) return;
-    worker.current.onmessage = (event: MessageEvent) => {
+    worker.current.onmessage = (event: MessageEvent<WorkerResponse>) => {
       const message = event.data;
       if (message.type === "ready") {
         setStatus("Ready");
@@ -200,7 +204,7 @@ export function SearchApp() {
     setPulseOnOpen(pulse);
     setTranscript({ episodeId, segments: [], loading: true });
     const id = ++episodeRequestId.current;
-    worker.current.postMessage({ type: "episode", episodeId, id });
+    postToWorker(worker.current, { type: "episode", episodeId, id });
   }, [state.segment]);
 
   // Restore focus to the panel's trigger once it closes (open → closed). Runs
