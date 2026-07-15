@@ -1,4 +1,5 @@
 import { ActiveFilterChips, EpisodeFacet, FacetGroup, FacetRow } from "@/components/facets";
+import { buildFilterChips } from "@/lib/filter-chips";
 import type { QueryState } from "@/lib/url-state";
 
 export interface YearFacet {
@@ -30,12 +31,7 @@ export function FilterContent({
   episodes: EpisodeFacetItem[];
   onChange: (patch: Partial<QueryState>) => void;
 }) {
-  const activeEpisode = episodes.find((episode) => episode.id === state.episode);
-  const chips = [
-    state.year ? { key: "year", label: `Year: ${state.year}` } : null,
-    activeEpisode ? { key: "episode", label: `Episode: AMA ${activeEpisode.number}` } : null,
-    state.type !== "all" ? { key: "type", label: TYPE_OPTIONS.find((o) => o.value === state.type)?.label ?? "" } : null
-  ].filter((chip): chip is { key: string; label: string } => chip !== null);
+  const chips = buildFilterChips(state, episodes);
 
   const removeChip = (key: string) => {
     if (key === "year") onChange({ year: "" });
