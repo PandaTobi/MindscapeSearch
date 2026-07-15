@@ -18,7 +18,11 @@ export function ModeSwitch({
   semanticCached: boolean;
 }) {
   return (
-    <div role="radiogroup" aria-label="Search mode" className="flex items-center gap-4 text-caption">
+    <div
+      role="radiogroup"
+      aria-label="Search mode"
+      className="flex items-center gap-4 text-caption"
+    >
       {MODES.map((option) => {
         const active = mode === option.value;
         return (
@@ -30,7 +34,9 @@ export function ModeSwitch({
             title={`Shortcut: ${option.shortcut}`}
             onClick={() => onChange(option.value)}
             className={`border-b-2 pb-0.5 transition-colors duration-[120ms] ${
-              active ? "border-accent text-text-primary" : "border-transparent text-text-tertiary hover:text-text-secondary"
+              active
+                ? "border-accent text-text-primary"
+                : "border-transparent text-text-tertiary hover:text-text-secondary"
             }`}
           >
             {option.label}

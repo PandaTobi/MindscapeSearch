@@ -12,7 +12,9 @@ export function HighlightedText({
   text: string;
   ranges?: Array<[number, number]>;
 }) {
-  const merged = mergeRanges(ranges.filter(([start, end]) => start >= 0 && end > start && end <= text.length));
+  const merged = mergeRanges(
+    ranges.filter(([start, end]) => start >= 0 && end > start && end <= text.length)
+  );
   if (!merged.length) return <>{text}</>;
   const nodes: ReactNode[] = [];
   let cursor = 0;

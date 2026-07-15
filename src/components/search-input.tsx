@@ -45,7 +45,7 @@ export function SearchInput({
     <div className="relative">
       <div
         className={`flex h-14 items-center gap-3 rounded-lg border bg-bg-raised px-4 transition-colors duration-[120ms] ${
-          focused ? "border-accent ring-2 ring-accent/30" : "border-border"
+          focused ? "ring-accent/30 border-accent ring-2" : "border-border"
         }`}
       >
         <span aria-hidden="true" className="text-text-tertiary">

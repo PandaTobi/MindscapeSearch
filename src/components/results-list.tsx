@@ -124,7 +124,9 @@ export function ResultsList({
               data-index={virtualRow.index}
               ref={virtualizer.measureElement}
               className="absolute left-0 top-0 w-full animate-rise motion-reduce:animate-none"
-              style={{ transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)` }}
+              style={{
+                transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)`
+              }}
             >
               <ResultCard
                 result={result}

@@ -47,9 +47,7 @@ body {
   background: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-  font-feature-settings:
-    "cv11",
-    "ss01";
+  font-feature-settings: "cv11", "ss01";
 }
 code,
 kbd,

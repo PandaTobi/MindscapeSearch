@@ -4,10 +4,10 @@
 export function SkeletonCard() {
   return (
     <li className="animate-pulse border-b border-border px-5 py-5" aria-hidden="true">
-      <div className="h-3 w-40 rounded shimmer-bg animate-shimmer" />
-      <div className="mt-3 h-4 w-3/4 rounded shimmer-bg animate-shimmer" />
-      <div className="mt-3 h-3.5 w-full rounded shimmer-bg animate-shimmer" />
-      <div className="mt-2 h-3.5 w-5/6 rounded shimmer-bg animate-shimmer" />
+      <div className="shimmer-bg h-3 w-40 animate-shimmer rounded" />
+      <div className="shimmer-bg mt-3 h-4 w-3/4 animate-shimmer rounded" />
+      <div className="shimmer-bg mt-3 h-3.5 w-full animate-shimmer rounded" />
+      <div className="shimmer-bg mt-2 h-3.5 w-5/6 animate-shimmer rounded" />
     </li>
   );
 }

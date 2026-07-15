@@ -4,13 +4,7 @@ import { useEffect, useRef } from "react";
 import { FilterContent, type EpisodeFacetItem, type YearFacet } from "@/components/filter-content";
 import type { QueryState } from "@/lib/url-state";
 
-export function FiltersPill({
-  activeCount,
-  onOpen
-}: {
-  activeCount: number;
-  onOpen: () => void;
-}) {
+export function FiltersPill({ activeCount, onOpen }: { activeCount: number; onOpen: () => void }) {
   return (
     <button
       type="button"
@@ -62,7 +56,7 @@ export function FilterSheet({
             onOpenChange(false);
           }
         }}
-        className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-lg border-t border-border bg-bg p-5 outline-none sm:inset-x-auto sm:right-5 sm:top-32 sm:bottom-auto sm:w-80 sm:rounded-lg sm:border"
+        className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-lg border-t border-border bg-bg p-5 outline-none sm:inset-x-auto sm:bottom-auto sm:right-5 sm:top-32 sm:w-80 sm:rounded-lg sm:border"
       >
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-caption font-medium text-text-primary">Filters</h2>

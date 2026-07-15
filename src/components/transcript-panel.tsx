@@ -9,7 +9,8 @@ import { segmentDeepLink } from "@/lib/url-state";
 import type { EpisodeMeta, Segment } from "@/lib/types";
 
 const isTypingTarget = (el: Element | null) =>
-  !!el && (["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName) || (el as HTMLElement).isContentEditable);
+  !!el &&
+  (["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName) || (el as HTMLElement).isContentEditable);
 
 export function TranscriptPanel({
   episode,
@@ -67,7 +68,8 @@ export function TranscriptPanel({
         if (!segments.length) return;
         event.preventDefault();
         const index = segments.findIndex((s) => s.segmentId === emphasizedId);
-        const next = event.key === "j" ? Math.min(index + 1, segments.length - 1) : Math.max(index - 1, 0);
+        const next =
+          event.key === "j" ? Math.min(index + 1, segments.length - 1) : Math.max(index - 1, 0);
         setEmphasizedId(segments[next]?.segmentId ?? emphasizedId);
       }
     };
@@ -82,14 +84,16 @@ export function TranscriptPanel({
       aria-modal="true"
       aria-label={episode ? `Transcript: ${episode.title}` : "Transcript"}
       tabIndex={-1}
-      className="fixed inset-0 z-40 flex flex-col border-border bg-bg outline-none animate-rise duration-[240ms] ease-panel motion-reduce:animate-none lg:inset-y-0 lg:left-auto lg:right-0 lg:w-[55%] lg:border-l"
+      className="fixed inset-0 z-40 flex animate-rise flex-col border-border bg-bg outline-none duration-[240ms] ease-panel motion-reduce:animate-none lg:inset-y-0 lg:left-auto lg:right-0 lg:w-[55%] lg:border-l"
     >
       <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-8">
         <div className="min-w-0">
           <p className="font-mono text-micro uppercase tracking-[0.06em] text-text-tertiary">
             {episode ? `AMA · ${monthYear(episode.date)} · AMA ${episode.number}` : "Transcript"}
           </p>
-          <h2 className="mt-1 truncate text-title text-text-primary">{episode?.title ?? "Loading…"}</h2>
+          <h2 className="mt-1 truncate text-title text-text-primary">
+            {episode?.title ?? "Loading…"}
+          </h2>
           {episode && (
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-text-tertiary">
               {episode.youtubeId && (
@@ -113,7 +117,9 @@ export function TranscriptPanel({
               <button
                 type="button"
                 className="transition-colors duration-[120ms] hover:text-text-primary"
-                onClick={() => navigator.clipboard.writeText(segmentDeepLink(episode.id, emphasizedId))}
+                onClick={() =>
+                  navigator.clipboard.writeText(segmentDeepLink(episode.id, emphasizedId))
+                }
               >
                 ⧉ Share episode
               </button>
@@ -143,7 +149,9 @@ export function TranscriptPanel({
                   else rowRefs.current.delete(segment.segmentId);
                 }}
                 className={`rounded-md py-2.5 pl-3 transition-colors duration-[120ms] ${
-                  isEmphasized ? `border-l-2 border-accent ${pulse ? "animate-pulse-bg" : ""}` : "border-l-2 border-transparent"
+                  isEmphasized
+                    ? `border-l-2 border-accent ${pulse ? "animate-pulse-bg" : ""}`
+                    : "border-l-2 border-transparent"
                 }`}
               >
                 <button
@@ -166,7 +174,10 @@ export function TranscriptPanel({
                 </button>
                 {isEmphasized && (
                   <div className="mt-3 whitespace-pre-line text-body-read text-text-primary">
-                    <HighlightedText text={segment.answerText} ranges={findAllRanges(segment.answerText, terms)} />
+                    <HighlightedText
+                      text={segment.answerText}
+                      ranges={findAllRanges(segment.answerText, terms)}
+                    />
                   </div>
                 )}
               </li>

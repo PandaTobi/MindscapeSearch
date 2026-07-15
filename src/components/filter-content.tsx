@@ -65,7 +65,11 @@ export function FilterContent({
         ))}
       </FacetGroup>
       <FacetGroup title="Episode">
-        <EpisodeFacet episodes={episodes} activeId={state.episode} onSelect={(id) => onChange({ episode: id })} />
+        <EpisodeFacet
+          episodes={episodes}
+          activeId={state.episode}
+          onSelect={(id) => onChange({ episode: id })}
+        />
       </FacetGroup>
     </div>
   );

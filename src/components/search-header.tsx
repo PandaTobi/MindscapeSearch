@@ -56,7 +56,7 @@ export function SearchHeader({
     <>
       <div ref={sentinel} aria-hidden="true" />
       <header
-        className={`sticky top-0 z-20 bg-bg/95 backdrop-blur transition-shadow duration-[120ms] ${
+        className={`bg-bg/95 sticky top-0 z-20 backdrop-blur transition-shadow duration-[120ms] ${
           scrolled ? "border-b border-border" : "border-b border-transparent"
         }`}
       >

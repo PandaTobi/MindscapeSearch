@@ -19,7 +19,9 @@ export function SampleQueries({
   if (!queries.length) return null;
   return (
     <div className="text-center">
-      {heading && <p className="mb-2 text-micro uppercase tracking-[0.06em] text-text-tertiary">{heading}</p>}
+      {heading && (
+        <p className="mb-2 text-micro uppercase tracking-[0.06em] text-text-tertiary">{heading}</p>
+      )}
       <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-body text-text-secondary">
         {queries.map((query, index) => (
           <span key={query}>
@@ -30,7 +32,11 @@ export function SampleQueries({
             >
               &ldquo;{query}&rdquo;
             </button>
-            {index < queries.length - 1 && <span aria-hidden="true" className="ml-2 text-text-tertiary">·</span>}
+            {index < queries.length - 1 && (
+              <span aria-hidden="true" className="ml-2 text-text-tertiary">
+                ·
+              </span>
+            )}
           </span>
         ))}
       </p>

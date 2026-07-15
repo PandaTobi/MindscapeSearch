@@ -19,10 +19,9 @@ export function JumpToQuestionPalette({
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => inputRef.current?.focus(), []);
   const query = filter.trim().toLowerCase();
-  const matches = (query ? segments.filter((s) => s.questionText.toLowerCase().includes(query)) : segments).slice(
-    0,
-    20
-  );
+  const matches = (
+    query ? segments.filter((s) => s.questionText.toLowerCase().includes(query)) : segments
+  ).slice(0, 20);
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 pt-24">
@@ -62,7 +61,9 @@ export function JumpToQuestionPalette({
               </button>
             </li>
           ))}
-          {!matches.length && <p className="px-4 py-3 text-caption text-text-tertiary">No questions match.</p>}
+          {!matches.length && (
+            <p className="px-4 py-3 text-caption text-text-tertiary">No questions match.</p>
+          )}
         </ul>
       </div>
     </div>

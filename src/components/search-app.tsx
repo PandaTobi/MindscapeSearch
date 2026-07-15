@@ -20,7 +20,13 @@ import {
   removeRecentSearch,
   type RecentSearch
 } from "@/lib/recent-searches";
-import { defaultQueryState, readQueryState, writeQueryState, segmentDeepLink, type QueryState } from "@/lib/url-state";
+import {
+  defaultQueryState,
+  readQueryState,
+  writeQueryState,
+  segmentDeepLink,
+  type QueryState
+} from "@/lib/url-state";
 import type { EpisodeMeta, Manifest, Segment, SearchMode, SearchResult } from "@/lib/types";
 
 const asset = (path: string) => `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}${path}`;
@@ -52,9 +58,11 @@ export function SearchApp() {
   const [recents, setRecents] = useState<RecentSearch[]>([]);
   const [semanticCached, setSemanticCached] = useState(false);
   const [downloadStrip, setDownloadStrip] = useState<"loading" | "ready" | "hidden">("hidden");
-  const [transcript, setTranscript] = useState<{ episodeId: string; segments: Segment[]; loading: boolean } | null>(
-    null
-  );
+  const [transcript, setTranscript] = useState<{
+    episodeId: string;
+    segments: Segment[];
+    loading: boolean;
+  } | null>(null);
   const [pulseOnOpen, setPulseOnOpen] = useState(false);
 
   const worker = useRef<Worker | null>(null);
@@ -118,7 +126,9 @@ export function SearchApp() {
       if (message.type === "episode") {
         if (message.id !== episodeRequestId.current) return;
         setTranscript((prev) =>
-          prev && prev.episodeId === message.episodeId ? { ...prev, segments: message.segments, loading: false } : prev
+          prev && prev.episodeId === message.episodeId
+            ? { ...prev, segments: message.segments, loading: false }
+            : prev
         );
         return;
       }
@@ -268,7 +278,10 @@ export function SearchApp() {
     const onKey = (event: KeyboardEvent) => {
       const typing = isTypingTarget(document.activeElement);
 
-      if ((event.key === "/" && !typing) || ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")) {
+      if (
+        (event.key === "/" && !typing) ||
+        ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")
+      ) {
         event.preventDefault();
         inputRef.current?.focus();
         return;
@@ -336,20 +349,39 @@ export function SearchApp() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [shortcutsOpen, palettteOpen, filtersOpen, closePanel, setQuery, update, moveActiveIndex, activateCard, copyActiveCardLink]);
+  }, [
+    shortcutsOpen,
+    palettteOpen,
+    filtersOpen,
+    closePanel,
+    setQuery,
+    update,
+    moveActiveIndex,
+    activateCard,
+    copyActiveCardLink
+  ]);
 
   const years = useMemo(() => {
     if (!manifest) return [];
     const counts = new Map<number, number>();
-    for (const episode of manifest.episodes) counts.set(episode.year, (counts.get(episode.year) ?? 0) + episode.count);
-    return [...counts.entries()].map(([year, count]) => ({ year, count })).sort((a, b) => b.year - a.year);
+    for (const episode of manifest.episodes)
+      counts.set(episode.year, (counts.get(episode.year) ?? 0) + episode.count);
+    return [...counts.entries()]
+      .map(([year, count]) => ({ year, count }))
+      .sort((a, b) => b.year - a.year);
   }, [manifest]);
 
   const episodeFacets = useMemo(() => {
     if (!manifest) return [];
     return [...manifest.episodes]
       .sort((a, b) => b.date.localeCompare(a.date))
-      .map((episode) => ({ id: episode.id, number: episode.number, title: episode.title, year: episode.year, count: episode.count }));
+      .map((episode) => ({
+        id: episode.id,
+        number: episode.number,
+        title: episode.title,
+        year: episode.year,
+        count: episode.count
+      }));
   }, [manifest]);
 
   const filtersActiveCount =
@@ -382,7 +414,8 @@ export function SearchApp() {
 
   const loadingIndex = status === "Loading index…";
   const answersOnly = state.type === "answer";
-  const showSkeleton = inFlight && results.length === 0 && !!state.query && status !== "Ready" && !loadingIndex;
+  const showSkeleton =
+    inFlight && results.length === 0 && !!state.query && status !== "Ready" && !loadingIndex;
 
   const sharedHeaderProps = {
     query: state.query,
@@ -421,7 +454,11 @@ export function SearchApp() {
             <div className="min-w-0 flex-1">
               {state.query ? (
                 <section aria-label="Search results">
-                  <ResultsMeta count={results.length} latencyMs={latencyMs} showRerankNotice={showRerankNotice} />
+                  <ResultsMeta
+                    count={results.length}
+                    latencyMs={latencyMs}
+                    showRerankNotice={showRerankNotice}
+                  />
                   <div aria-live="polite" className="sr-only">
                     {activeIndex >= 0 && results[activeIndex]
                       ? `${activeIndex + 1} of ${results.length}: ${results[activeIndex].questionText || results[activeIndex].answerText.slice(0, 60)}`

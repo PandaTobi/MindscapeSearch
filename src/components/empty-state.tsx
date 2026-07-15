@@ -28,10 +28,14 @@ export function EmptyState({
     <div className="mx-auto max-w-md px-4 py-10 text-center">
       {recents.length > 0 && (
         <div className="mb-10 text-left">
-          <p className="mb-2 text-micro uppercase tracking-[0.06em] text-text-tertiary">Recent searches</p>
+          <p className="mb-2 text-micro uppercase tracking-[0.06em] text-text-tertiary">
+            Recent searches
+          </p>
           <ul
             onKeyDown={(event) => {
-              const items = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("[data-recent-row]"));
+              const items = Array.from(
+                event.currentTarget.querySelectorAll<HTMLElement>("[data-recent-row]")
+              );
               const currentIndex = items.findIndex((item) => item === document.activeElement);
               if (event.key === "ArrowDown" || event.key === "ArrowUp") {
                 event.preventDefault();

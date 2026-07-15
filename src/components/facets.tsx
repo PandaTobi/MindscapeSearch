@@ -36,7 +36,9 @@ export function FacetRow({
         className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? "bg-accent" : "bg-text-tertiary/50"}`}
       />
       <span className="flex-1 truncate">{label}</span>
-      {count !== undefined && <span className="font-mono text-micro text-text-tertiary">{count}</span>}
+      {count !== undefined && (
+        <span className="font-mono text-micro text-text-tertiary">{count}</span>
+      )}
     </button>
   );
 }
@@ -53,13 +55,19 @@ export function EpisodeFacet({
   const [filter, setFilter] = useState("");
   const query = filter.trim().toLowerCase();
   const filtered = query
-    ? episodes.filter((episode) => episode.title.toLowerCase().includes(query) || String(episode.year).includes(query))
+    ? episodes.filter(
+        (episode) =>
+          episode.title.toLowerCase().includes(query) || String(episode.year).includes(query)
+      )
     : episodes;
   return (
     <div>
       <label className="relative block px-1">
         <span className="sr-only">Filter episodes</span>
-        <span aria-hidden="true" className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-text-tertiary">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-text-tertiary"
+        >
           ⌕
         </span>
         <input
@@ -80,7 +88,9 @@ export function EpisodeFacet({
             onSelect={() => onSelect(episode.id)}
           />
         ))}
-        {!filtered.length && <p className="px-1 py-2 text-caption text-text-tertiary">No episodes match.</p>}
+        {!filtered.length && (
+          <p className="px-1 py-2 text-caption text-text-tertiary">No episodes match.</p>
+        )}
       </div>
     </div>
   );
