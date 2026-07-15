@@ -41,7 +41,7 @@ export function ResultsList({
   const [revealCount, setRevealCount] = useState(BATCH_SIZE);
   const [growing, setGrowing] = useState(false);
   const [scrollMargin, setScrollMargin] = useState(0);
-  const listRef = useRef<HTMLOListElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // The window virtualizer needs the list's offset from the top of the
@@ -109,10 +109,16 @@ export function ResultsList({
 
   return (
     <div>
-      <ol
+      {/* A plain list of articles, not a listbox: each card contains its own
+          interactive controls (play / open / copy), which ARIA forbids inside
+          an option, and the virtualizer's absolutely-positioned wrapper divs
+          sit between the container and the cards. role="list"/"listitem" stays
+          valid across that wrapper; keyboard cursoring is a purely visual
+          affordance driven by the caller, and position is announced via the
+          caller's aria-live region. */}
+      <div
         ref={listRef}
-        role="listbox"
-        aria-label="Search results"
+        role="list"
         className="relative"
         style={{ height: virtualizer.getTotalSize(), overflowAnchor: "none" }}
       >
@@ -121,6 +127,7 @@ export function ResultsList({
           return (
             <div
               key={result.segmentId}
+              role="listitem"
               data-index={virtualRow.index}
               ref={virtualizer.measureElement}
               className="absolute left-0 top-0 w-full animate-rise motion-reduce:animate-none"
@@ -140,7 +147,7 @@ export function ResultsList({
             </div>
           );
         })}
-      </ol>
+      </div>
       {hasMore && (
         <>
           <div ref={sentinelRef} aria-hidden="true" className="h-px" />

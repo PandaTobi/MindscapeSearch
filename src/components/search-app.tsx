@@ -443,7 +443,7 @@ export function SearchApp() {
           updated={updated}
         />
       ) : (
-        <main className="mx-auto min-h-screen max-w-6xl px-0 pb-24">
+        <main id="main" className="mx-auto min-h-screen max-w-6xl px-0 pb-24">
           <SearchHeader
             {...sharedHeaderProps}
             filtersActiveCount={filtersActiveCount}
@@ -453,7 +453,7 @@ export function SearchApp() {
             <FilterRail state={state} years={years} episodes={episodeFacets} onChange={update} />
             <div className="min-w-0 flex-1">
               {state.query ? (
-                <section aria-label="Search results">
+                <section aria-label={`Results for "${state.query}"`}>
                   <ResultsMeta
                     count={results.length}
                     latencyMs={latencyMs}

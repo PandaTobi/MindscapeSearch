@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { HighlightedText } from "@/components/highlighted-text";
 import { countMatches } from "@/lib/highlight";
 import { episodeBadge, mediaUrl, questionLabel, secondsToClock } from "@/lib/format";
@@ -26,6 +26,7 @@ export function ResultCard({
   onActivate,
   onOpenTranscript
 }: ResultCardProps) {
+  const headingId = useId();
   const [copied, setCopied] = useState(false);
   useEffect(() => {
     if (!copied) return;
@@ -50,10 +51,9 @@ export function ResultCard({
   };
 
   return (
-    <li
-      role="option"
-      aria-selected={isActive}
-      tabIndex={-1}
+    <article
+      aria-labelledby={result.questionText ? headingId : undefined}
+      aria-label={result.questionText ? undefined : `${episodeBadge(result.episode.date)}, ${secondsToClock(result.startSec)}`}
       className={`group relative border-b border-border px-1 py-5 transition-colors duration-[120ms] ${
         isActive ? "bg-bg-raised" : "hover:bg-bg-raised"
       }`}
@@ -74,6 +74,7 @@ export function ResultCard({
 
       {result.questionText && (
         <h2
+          id={headingId}
           className={`px-4 ${
             answersOnly
               ? "mt-1.5 line-clamp-2 text-caption text-text-secondary"
@@ -121,8 +122,11 @@ export function ResultCard({
         >
           <span aria-hidden="true">⧉ </span>
           {copied ? "Copied" : "Copy link"}
+          <span className="sr-only" aria-live="polite">
+            {copied ? " — copied to clipboard" : ""}
+          </span>
         </button>
       </div>
-    </li>
+    </article>
   );
 }

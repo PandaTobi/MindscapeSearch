@@ -42,7 +42,7 @@ export function HomeHero({
   updated: string | null;
 }) {
   return (
-    <div className="flex min-h-screen flex-col px-5 sm:px-8">
+    <main id="main" className="flex min-h-screen flex-col px-5 sm:px-8">
       <div className="flex justify-end pt-6">
         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </div>
@@ -79,6 +79,6 @@ export function HomeHero({
           {updated && ` · updated ${updated}`}
         </footer>
       )}
-    </div>
+    </main>
   );
 }

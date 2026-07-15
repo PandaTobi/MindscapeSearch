@@ -55,9 +55,11 @@ export function SearchInput({
           ref={inputRef}
           id="search"
           role="combobox"
+          aria-label="Search questions and answers"
           aria-expanded={visible}
-          aria-controls={listId}
-          aria-activedescendant={highlighted >= 0 ? `${listId}-${highlighted}` : undefined}
+          // Only reference the listbox while it's actually in the DOM.
+          aria-controls={visible ? listId : undefined}
+          aria-activedescendant={visible && highlighted >= 0 ? `${listId}-${highlighted}` : undefined}
           aria-autocomplete="list"
           value={value}
           onChange={(event) => onChange(event.target.value)}
