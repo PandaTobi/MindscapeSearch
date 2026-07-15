@@ -108,8 +108,7 @@ function jacobiEigen(A: Float64Array, k: number) {
   for (let i = 0; i < k; i++) V[i * k + i] = 1;
   for (let sweep = 0; sweep < 100; sweep++) {
     let off = 0;
-    for (let p = 0; p < k; p++)
-      for (let q = p + 1; q < k; q++) off += A[p * k + q] * A[p * k + q];
+    for (let p = 0; p < k; p++) for (let q = p + 1; q < k; q++) off += A[p * k + q] * A[p * k + q];
     if (off < 1e-12) break;
     for (let p = 0; p < k; p++) {
       for (let q = p + 1; q < k; q++) {
@@ -256,7 +255,9 @@ export function trainWordTable(documents: string[]): WordTable {
     }
   const { eig, V: W } = jacobiEigen(T, k);
   if (process.env.DBG_EIGEN) {
-    const sorted = [...eig].sort((x, y) => y.value - x.value).map((e) => Math.round(e.value * 100) / 100);
+    const sorted = [...eig]
+      .sort((x, y) => y.value - x.value)
+      .map((e) => Math.round(e.value * 100) / 100);
     console.error("eigvals top/bottom:", sorted.slice(0, 6), "…", sorted.slice(-3));
   }
   // Keep the top `dim` positive eigenpairs (largest magnitude eigenvalues).
@@ -352,9 +353,18 @@ export function segmentToPassages(segment: {
     const wordRe = /\S+/g;
     const spans: Array<{ start: number; end: number }> = [];
     let match: RegExpExecArray | null;
-    while ((match = wordRe.exec(answer))) spans.push({ start: match.index, end: match.index + match[0].length });
-    const { answerChunkWords: size, answerChunkOverlap: overlap, maxAnswerChunks: cap } = EMBED_CONFIG;
-    for (let start = 0, chunks = 0; start < spans.length && chunks < cap; start += size - overlap, chunks++) {
+    while ((match = wordRe.exec(answer)))
+      spans.push({ start: match.index, end: match.index + match[0].length });
+    const {
+      answerChunkWords: size,
+      answerChunkOverlap: overlap,
+      maxAnswerChunks: cap
+    } = EMBED_CONFIG;
+    for (
+      let start = 0, chunks = 0;
+      start < spans.length && chunks < cap;
+      start += size - overlap, chunks++
+    ) {
       const slice = spans.slice(start, start + size);
       if (!slice.length) break;
       const from = slice[0].start;
@@ -379,7 +389,8 @@ export function nearestWords(table: WordTable, word: string, n = 8): string[] {
   const base = wi * table.dim;
   const scored = table.words.map((w, i) => {
     let dot = 0;
-    for (let d = 0; d < table.dim; d++) dot += table.vectors[base + d] * table.vectors[i * table.dim + d];
+    for (let d = 0; d < table.dim; d++)
+      dot += table.vectors[base + d] * table.vectors[i * table.dim + d];
     return { w, dot };
   });
   return scored

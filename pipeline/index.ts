@@ -30,7 +30,11 @@ const toBase64 = (bytes: Int8Array) =>
 /** The static word table the browser downloads to embed queries offline. */
 function vocabShard(table: WordTable) {
   const flat = new Int8Array(table.words.length * table.dim);
-  for (let i = 0; i < table.words.length; i++) flat.set(quantizeInt8(table.vectors.subarray(i * table.dim, i * table.dim + table.dim)), i * table.dim);
+  for (let i = 0; i < table.words.length; i++)
+    flat.set(
+      quantizeInt8(table.vectors.subarray(i * table.dim, i * table.dim + table.dim)),
+      i * table.dim
+    );
   return {
     v: 1,
     dim: table.dim,
@@ -59,7 +63,10 @@ function vectorShard(records: Record[], table: WordTable) {
   }
   const flat = new Int8Array(rows.length * table.dim);
   rows.forEach((row, i) => flat.set(row, i * table.dim));
-  return { payload: { v: 1, dim: table.dim, seg, sec, off, data: toBase64(flat) }, count: rows.length };
+  return {
+    payload: { v: 1, dim: table.dim, seg, sec, off, data: toBase64(flat) },
+    count: rows.length
+  };
 }
 
 const normalize = (value: string) =>
@@ -69,7 +76,10 @@ const normalize = (value: string) =>
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
-const words = (value: string) => normalize(value).split(/\s+/).filter((word) => word.length > 1);
+const words = (value: string) =>
+  normalize(value)
+    .split(/\s+/)
+    .filter((word) => word.length > 1);
 const shortKeys = (record: Record) => [
   record.segmentId,
   record.type,
@@ -84,7 +94,9 @@ const shortKeys = (record: Record) => [
 function compressedDocs(records: Record[]) {
   const frequencies = new Map<string, number>();
   for (const record of records) {
-    for (const word of `${record.questionText} ${record.answerText}`.match(/[\p{L}\p{N}]+|[^\p{L}\p{N}]+/gu) ?? []) {
+    for (const word of `${record.questionText} ${record.answerText}`.match(
+      /[\p{L}\p{N}]+|[^\p{L}\p{N}]+/gu
+    ) ?? []) {
       if (word.length >= 3) frequencies.set(word, (frequencies.get(word) ?? 0) + 1);
     }
   }
@@ -97,7 +109,15 @@ function compressedDocs(records: Record[]) {
     (text.match(/[\p{L}\p{N}]+|[^\p{L}\p{N}]+/gu) ?? []).map((part) =>
       dictionaryIds.has(part) ? dictionaryIds.get(part) : part
     );
-  return { v: 1, d: dictionary, r: records.map((record) => [...shortKeys(record), encode(record.questionText), encode(record.answerText)]) };
+  return {
+    v: 1,
+    d: dictionary,
+    r: records.map((record) => [
+      ...shortKeys(record),
+      encode(record.questionText),
+      encode(record.answerText)
+    ])
+  };
 }
 
 function keywordIndex(records: Record[]) {
@@ -122,7 +142,10 @@ function keywordIndex(records: Record[]) {
     t: terms.map((term) => [term, [...postings.get(term)!.entries()]]),
     // a compact prefix dictionary, ordered by usefulness then alphabetically.
     a: [...autocomplete]
-      .sort(([left, leftCount], [right, rightCount]) => rightCount - leftCount || left.localeCompare(right))
+      .sort(
+        ([left, leftCount], [right, rightCount]) =>
+          rightCount - leftCount || left.localeCompare(right)
+      )
       .slice(0, 12000)
       .map(([term]) => term),
     // minimal record metadata: display text remains in docs shards.
@@ -147,7 +170,15 @@ async function writeArtifact(
   const compressedPath = join(outputDir, compressedRelative);
   const { writeFile } = await import("node:fs/promises");
   await writeFile(compressedPath, compressed);
-  return { kind, key, url: `./${relative}`, compressedUrl: `./${compressedRelative}`, bytes: Buffer.byteLength(payload), compressedBytes: compressed.length, sha256: sha256(payload) };
+  return {
+    kind,
+    key,
+    url: `./${relative}`,
+    compressedUrl: `./${compressedRelative}`,
+    bytes: Buffer.byteLength(payload),
+    compressedBytes: compressed.length,
+    sha256: sha256(payload)
+  };
 }
 
 async function main() {
@@ -169,7 +200,9 @@ async function main() {
   // every passage against it. Build- and query-time embedding share this table.
   const allRecords = [...recordsByYear.values()].flat();
   console.log(`Training static embeddings over ${allRecords.length} segments…`);
-  const table = trainWordTable(allRecords.map((record) => `${record.questionText} ${record.answerText}`));
+  const table = trainWordTable(
+    allRecords.map((record) => `${record.questionText} ${record.answerText}`)
+  );
   console.log(`Learned ${table.words.length} word vectors at ${table.dim}-D.`);
   for (const seed of ["entropy", "consciousness", "quantum", "universe", "morality"]) {
     const neighbors = nearestWords(table, seed);
@@ -180,11 +213,16 @@ async function main() {
   let vectorCount = 0;
   for (const [year, records] of [...recordsByYear].sort(([a], [b]) => a - b)) {
     shards.push(await writeArtifact("keyword", String(year), keywordIndex(records)));
-    shards.push(await writeArtifact("autocomplete", String(year), { v: 1, a: keywordIndex(records).a }));
+    shards.push(
+      await writeArtifact("autocomplete", String(year), { v: 1, a: keywordIndex(records).a })
+    );
     shards.push(await writeArtifact("docs", String(year), compressedDocs(records)));
     const vectors = vectorShard(records, table);
     vectorCount += vectors.count;
-    shards.push({ ...(await writeArtifact("vectors", String(year), vectors.payload)), vectorCount: vectors.count });
+    shards.push({
+      ...(await writeArtifact("vectors", String(year), vectors.payload)),
+      vectorCount: vectors.count
+    });
   }
   shards.push(await writeArtifact("vocab", "words", vocabShard(table)));
   const episodeMeta = episodes.map((episode) => ({

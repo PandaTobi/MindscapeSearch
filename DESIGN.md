@@ -2,32 +2,32 @@
 
 ## 1. Design Rationale
 
-### The core concept: the search bar *is* the product
+### The core concept: the search bar _is_ the product
 
 Everything else — filters, cards, the transcript view — exists in service of one loop: **type → see → jump to the moment Sean answers**. So the design treats the query input the way Raycast treats its command bar: it's the largest, brightest, most typographically dominant element on every screen, always one keystroke away, never scrolled out of reach.
 
 Three consequences follow:
 
 1. **Typography carries the hierarchy, not chrome.** There are no card borders doing the work of headings, no icons doing the work of labels. Hierarchy comes from four levers only: size, weight, color (four steps of gray), and space. A result card is legible as a card because of its internal rhythm, not because of a box around it.
-2. **Dark is the canonical theme.** This is a late-night "what did Sean say about the measurement problem" tool. Design dark-first (light mode is derived, not the reverse): near-black surface, warm-gray text ramp, one accent used *only* for interaction states and highlights — never decoration.
-3. **The interface must never make the user wait on the machine's ambition.** The spec's keyword-first / semantic-opt-in contract becomes a visible UX principle: keyword results render as-you-type, and the semantic layer *upgrades* the page in place — it never blocks it, never reflows it, and announces itself quietly.
+2. **Dark is the canonical theme.** This is a late-night "what did Sean say about the measurement problem" tool. Design dark-first (light mode is derived, not the reverse): near-black surface, warm-gray text ramp, one accent used _only_ for interaction states and highlights — never decoration.
+3. **The interface must never make the user wait on the machine's ambition.** The spec's keyword-first / semantic-opt-in contract becomes a visible UX principle: keyword results render as-you-type, and the semantic layer _upgrades_ the page in place — it never blocks it, never reflows it, and announces itself quietly.
 
 ### Personality in one line
 
-*A physics library at midnight*: austere, precise, quiet — with a single point of warmth (the accent) marking where the answers are.
+_A physics library at midnight_: austere, precise, quiet — with a single point of warmth (the accent) marking where the answers are.
 
 ### Palette (dark canonical)
 
-| Token | Value | Use |
-|---|---|---|
-| `bg` | `#0B0C0E` | page background |
-| `bg-raised` | `#111317` | cards on hover, sheets, palette |
-| `border` | `#1F2228` | hairlines only, 1px |
-| `text-primary` | `#EDEEF0` | questions, headings, input text |
-| `text-secondary` | `#9BA1AB` | answer snippets, labels |
-| `text-tertiary` | `#5C6370` | metadata, timestamps, hints |
-| `accent` | `#7C8AFF` (soft iris) | focus rings, active states, links, semantic-mode indicator |
-| `highlight` | `#F5D66B` at 18% opacity, full-strength text | keyword match marks |
+| Token            | Value                                        | Use                                                        |
+| ---------------- | -------------------------------------------- | ---------------------------------------------------------- |
+| `bg`             | `#0B0C0E`                                    | page background                                            |
+| `bg-raised`      | `#111317`                                    | cards on hover, sheets, palette                            |
+| `border`         | `#1F2228`                                    | hairlines only, 1px                                        |
+| `text-primary`   | `#EDEEF0`                                    | questions, headings, input text                            |
+| `text-secondary` | `#9BA1AB`                                    | answer snippets, labels                                    |
+| `text-tertiary`  | `#5C6370`                                    | metadata, timestamps, hints                                |
+| `accent`         | `#7C8AFF` (soft iris)                        | focus rings, active states, links, semantic-mode indicator |
+| `highlight`      | `#F5D66B` at 18% opacity, full-strength text | keyword match marks                                        |
 
 One accent, one highlight color, and that's the entire chromatic budget. Match highlights are the only "loud" element on screen — deliberately, because they're the information the user is scanning for.
 
@@ -59,11 +59,11 @@ The homepage is a single centered column, vertically positioned at ~38% viewport
 
 - **Wordmark**: text only, `text-primary`, no logo asset. Sub-line in `text-secondary`.
 - **Search input**: 56px tall, `bg-raised`, 1px `border`, 10px radius, 18px input text. Focused by default on page load. The `⌘K` hint sits right-aligned in `text-tertiary` and disappears on focus.
-- **Mode switch** (Keyword / Hybrid / Semantic) is a segmented text control directly under the input — small (13px), `text-tertiary`, active segment in `text-primary` with a 2px accent underline. Semantic segment shows a subtle `↓ 23 MB` suffix until the model is cached; after caching, the suffix disappears forever. This makes the spec's progressive-enhancement contract *legible* instead of surprising.
+- **Mode switch** (Keyword / Hybrid / Semantic) is a segmented text control directly under the input — small (13px), `text-tertiary`, active segment in `text-primary` with a 2px accent underline. Semantic segment shows a subtle `↓ 23 MB` suffix until the model is cached; after caching, the suffix disappears forever. This makes the spec's progressive-enhancement contract _legible_ instead of surprising.
 - **Sample queries**: three real, evocative questions rendered as plain quoted text links (`text-secondary`, accent on hover). These teach the corpus's voice better than any onboarding copy.
 - **Corpus stats footer**: one line, `text-tertiary`, sourced from the manifest. It doubles as a trust signal ("updated June 2026") and a scale signal.
 
-No hero image, no feature grid, no marketing. The homepage should feel like it's *already waiting for input*.
+No hero image, no feature grid, no marketing. The homepage should feel like it's _already waiting for input_.
 
 ### 2.2 Search experience (active-query state)
 
@@ -92,10 +92,10 @@ Layout, desktop (≥1024px):
 
 - **Sticky header** holds the input + mode switch; it's the only fixed element. 1px bottom hairline appears only after scroll (avoids a floating look at rest).
 - **Filter rail** (left, 240px): plain text lists with counts from the manifest facets — no checkboxes-in-boxes, just rows with a small state dot and count in `text-tertiary`. Active filters get `text-primary` + accent dot. Below ~1024px the rail collapses into a **"Filters (2)" pill** in the header that opens a bottom sheet on mobile / a popover on tablet.
-- **Results column** is width-capped at 680px for measure control and *left-aligned against the rail*, not centered — centered result lists drift as the rail toggles; this layout never reflows.
+- **Results column** is width-capped at 680px for measure control and _left-aligned against the rail_, not centered — centered result lists drift as the rail toggles; this layout never reflows.
 - **Result meta line** ("128 results · 41 ms") in `text-tertiary`. The millisecond count is an honest brag — this product's differentiator is speed, so surface it, Vercel-style.
 - **Hybrid upgrade behavior**: keyword results render immediately; when semantic re-ranking lands (spec §8.2 step 3), cards reorder using **FLIP position transitions (~250ms)** rather than a repaint, and a one-line notice appears above the list: `Re-ranked with semantic matching` in `text-tertiary`, fading after 2s. Reordering without explanation reads as a glitch; this makes it read as intelligence.
-- **Autocomplete** renders as a flat list *inside* the input's container (expanding it downward, Raycast-style), max 6 items, matched prefix in `text-primary` and completion in `text-tertiary`. `↹` accepts, `↑↓` navigates suggestions before results.
+- **Autocomplete** renders as a flat list _inside_ the input's container (expanding it downward, Raycast-style), max 6 items, matched prefix in `text-primary` and completion in `text-tertiary`. `↹` accepts, `↑↓` navigates suggestions before results.
 - **Infinite scroll**: no spinner rows; the next page fades in as skeleton cards ~800px before the sentinel, so scrolling never visibly bottoms out.
 
 ### 2.3 Search result card — anatomy
@@ -166,7 +166,7 @@ Three distinct waits, three distinct treatments — never a generic spinner:
 
 1. **Index loading (first ~1.5s, spec §10):** the input renders immediately but shows `Loading index…` as its placeholder with a 2px indeterminate accent shimmer along the input's bottom edge. Typing is buffered, not blocked — the query executes the instant the index restores. The user should never learn the app "wasn't ready."
 2. **Results paging / query in flight:** skeleton cards — three gray bars matching the card's real type geometry (meta line, question, snippet), 1.2s shimmer, max 3 skeletons. Because keyword search is ~instant, these mostly appear only during infinite-scroll shard fetches.
-3. **Semantic model download (one-time, ~23MB):** an inline, dismissible strip under the mode switch — `Downloading semantic model · 12.4 / 23 MB — cached after this` with a thin determinate accent progress bar. Keyword results keep flowing above it the whole time. When done: `Semantic search ready` for 2s, then gone. Never a modal, never an overlay — this is an *enhancement arriving*, not a gate.
+3. **Semantic model download (one-time, ~23MB):** an inline, dismissible strip under the mode switch — `Downloading semantic model · 12.4 / 23 MB — cached after this` with a thin determinate accent progress bar. Keyword results keep flowing above it the whole time. When done: `Semantic search ready` for 2s, then gone. Never a modal, never an overlay — this is an _enhancement arriving_, not a gate.
 
 ### 2.7 No-results state
 
@@ -237,24 +237,26 @@ Notable structural decisions: `HomeHero` and `EmptyState` share the sample-queri
 ## 4. Spacing & Typography Guidance
 
 ### Type stack
+
 - **UI + reading:** Inter (or Geist) — variable weight, `font-feature-settings: "cv11", "ss01"` for the cleaner Linear-style glyphs.
-- **Data:** Geist Mono / JetBrains Mono — timestamps, badges, counts, latency, shortcut keys. *Everything numeric-and-precise is mono; everything human is sans.* This single rule produces most of the product's visual identity.
+- **Data:** Geist Mono / JetBrains Mono — timestamps, badges, counts, latency, shortcut keys. _Everything numeric-and-precise is mono; everything human is sans._ This single rule produces most of the product's visual identity.
 
 ### Type scale (rem base 16, tight and deliberate — 7 steps only)
 
-| Token | Size / line | Weight | Use |
-|---|---|---|---|
-| `display` | 32 / 1.2 | 600, −1% tracking | homepage wordmark |
-| `title` | 20 / 1.3 | 600 | transcript question headings |
-| `question` | 17 / 1.45 | 550 | result-card questions |
-| `body-read` | 16 / 1.7 | 400 | transcript answers, 65ch max |
-| `body` | 14 / 1.6 | 400 | snippets, filter labels |
-| `caption` | 13 / 1.4 | 450 | mode switch, meta, actions |
-| `micro` | 11 / 1.3 | 500 mono, +6% tracking, uppercase | badges, timestamps |
+| Token       | Size / line | Weight                            | Use                          |
+| ----------- | ----------- | --------------------------------- | ---------------------------- |
+| `display`   | 32 / 1.2    | 600, −1% tracking                 | homepage wordmark            |
+| `title`     | 20 / 1.3    | 600                               | transcript question headings |
+| `question`  | 17 / 1.45   | 550                               | result-card questions        |
+| `body-read` | 16 / 1.7    | 400                               | transcript answers, 65ch max |
+| `body`      | 14 / 1.6    | 400                               | snippets, filter labels      |
+| `caption`   | 13 / 1.4    | 450                               | mode switch, meta, actions   |
+| `micro`     | 11 / 1.3    | 500 mono, +6% tracking, uppercase | badges, timestamps           |
 
 Input text is 18px — larger than anything it produces, reinforcing "the query is the hero."
 
 ### Spacing
+
 - **4px base grid**; the working set is `4 · 8 · 12 · 16 · 20 · 24 · 32 · 48 · 64`.
 - Card internals: 6px meta→question, 8px question→snippet, 12px snippet→actions; **20px card padding, cards separated by hairlines, not gaps** — density like Linear's issue list, not a card gallery.
 - Results measure 680px; transcript measure 65ch; filter rail 240px; 24px gutters desktop, 16px mobile.
@@ -262,6 +264,7 @@ Input text is 18px — larger than anything it produces, reinforcing "the query 
 - Hairlines are always 1px `border` color — no 2px borders anywhere except the accent focus indicator.
 
 ### Breakpoints
+
 `<640` single column, filter sheet, transcript full-screen · `640–1024` filters popover · `≥1024` full rail + transcript side panel · `≥1440` layout stops growing (whitespace absorbs).
 
 ---
@@ -270,36 +273,37 @@ Input text is 18px — larger than anything it produces, reinforcing "the query 
 
 ### Keyboard map (the primary interface)
 
-| Key | Context | Action |
-|---|---|---|
-| `/` or `⌘K` | anywhere | focus search (select existing text) |
-| `Esc` | input → results → panel | clear query → blur to list → close panel (one layer per press) |
-| `↑ ↓` | results | move card cursor (accent left bar); scrolls virtually |
-| `Enter` | focused card | open transcript panel |
-| `⌘Enter` | focused card | play at timestamp (media deep link, new tab) |
-| `c` | focused card | copy deep link |
-| `g` then `k / h / s` | anywhere | mode: keyword / hybrid / semantic (spec's `g` prefix) |
-| `f` | results | open/focus filters |
-| `⌘J` | transcript panel | jump-to-question palette |
-| `j / k` | transcript panel | next / previous segment |
-| `?` | anywhere | shortcuts overlay |
+| Key                  | Context                 | Action                                                         |
+| -------------------- | ----------------------- | -------------------------------------------------------------- |
+| `/` or `⌘K`          | anywhere                | focus search (select existing text)                            |
+| `Esc`                | input → results → panel | clear query → blur to list → close panel (one layer per press) |
+| `↑ ↓`                | results                 | move card cursor (accent left bar); scrolls virtually          |
+| `Enter`              | focused card            | open transcript panel                                          |
+| `⌘Enter`             | focused card            | play at timestamp (media deep link, new tab)                   |
+| `c`                  | focused card            | copy deep link                                                 |
+| `g` then `k / h / s` | anywhere                | mode: keyword / hybrid / semantic (spec's `g` prefix)          |
+| `f`                  | results                 | open/focus filters                                             |
+| `⌘J`                 | transcript panel        | jump-to-question palette                                       |
+| `j / k`              | transcript panel        | next / previous segment                                        |
+| `?`                  | anywhere                | shortcuts overlay                                              |
 
 Rules: focus is **always visible** (accent 2px ring on controls, accent left-bar on cards — never the browser default outline, never invisible). The card cursor persists through result re-ranking (it follows the segment, not the index). Every keyboard path has a pointer equivalent; nothing is keyboard-only.
 
 ### Motion (subtle only — total budget: ~6 animations)
 
-| Event | Treatment |
-|---|---|
-| Home → search morph | input translate/scale, 200ms `ease-out` — the signature move |
-| Result entrance | 80ms fade + 4px rise, **no stagger** beyond first paint |
-| Hybrid re-rank | FLIP position transitions, 250ms |
-| Transcript panel | 240ms slide, `cubic-bezier(0.32, 0.72, 0, 1)` |
-| Deep-link arrival | one 800ms background pulse on target segment |
-| Hover/focus states | 120ms color/background only — **never** transform on hover (no lift, no scale) |
+| Event               | Treatment                                                                      |
+| ------------------- | ------------------------------------------------------------------------------ |
+| Home → search morph | input translate/scale, 200ms `ease-out` — the signature move                   |
+| Result entrance     | 80ms fade + 4px rise, **no stagger** beyond first paint                        |
+| Hybrid re-rank      | FLIP position transitions, 250ms                                               |
+| Transcript panel    | 240ms slide, `cubic-bezier(0.32, 0.72, 0, 1)`                                  |
+| Deep-link arrival   | one 800ms background pulse on target segment                                   |
+| Hover/focus states  | 120ms color/background only — **never** transform on hover (no lift, no scale) |
 
 Everything else is instant. All motion is opacity/transform/color (compositor-only), respects `prefers-reduced-motion` (reduces to opacity fades), and **nothing ever moves other content** — zero layout shift is a design rule here, not just a performance metric.
 
 ### State & feedback conventions
+
 - **URL is the source of truth** (query, mode, filters, open segment) — every state is shareable and back/forward-safe, per spec §8.3.
 - **Optimistic, quiet confirmation**: copy actions confirm inline via label swap; no toasts anywhere in the product.
 - **Latency is displayed, not hidden** (`41 ms`) — speed is the brand.

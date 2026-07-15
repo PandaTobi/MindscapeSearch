@@ -15,23 +15,23 @@ architecture, sharding, manifest, RRF fusion, worker topology — is unchanged.
 
 A transformer sentence-encoder is the obvious way to get query embeddings in the
 browser, and it works. But it is expensive in exactly the dimension the task asks
-us to minimize — **download size** — because the *encoder itself* must reach the
+us to minimize — **download size** — because the _encoder itself_ must reach the
 user:
 
-| Cost | MiniLM / `transformers.js` |
-|---|---|
-| Model weights (int8 ONNX) | ~23 MB |
-| ONNX Runtime Web (WASM) | ~5 MB |
-| First-query latency | 50–200 ms (WASM), tokenizer init |
-| Build dependency | pull a ~100 MB PyTorch model in CI |
+| Cost                      | MiniLM / `transformers.js`         |
+| ------------------------- | ---------------------------------- |
+| Model weights (int8 ONNX) | ~23 MB                             |
+| ONNX Runtime Web (WASM)   | ~5 MB                              |
+| First-query latency       | 50–200 ms (WASM), tokenizer init   |
+| Build dependency          | pull a ~100 MB PyTorch model in CI |
 
 You pay ~28 MB and a WASM runtime **before the first semantic query returns**, and
 every query then costs a WASM forward pass. For a keyword-first app where semantic
-is an *opt-in enhancement*, that is a poor size/quality trade.
+is an _opt-in enhancement_, that is a poor size/quality trade.
 
 ## 2. The chosen strategy: distill a static embedding from the corpus
 
-Instead of shipping a model that *computes* embeddings, we ship a **lookup table**
+Instead of shipping a model that _computes_ embeddings, we ship a **lookup table**
 of pre-computed word vectors and embed text as a weighted average. This is the
 same idea as [Model2Vec](https://github.com/MinishLab/model2vec) ("potion" static
 embeddings), except the table is **distilled from the AMA corpus itself** using
@@ -52,7 +52,7 @@ Pipeline (`pipeline/embed/index.ts`, build-time only, deterministic, no network)
    dimensions; we keep them all.)
 5. **Pooling** — a passage/query embeds as the **IDF-weighted mean** of its word
    vectors, L2-normalized. Rare, topical words dominate; stopwords contribute
-   little. The *identical* function embeds the corpus at build time and the user's
+   little. The _identical_ function embeds the corpus at build time and the user's
    query at run time, so the vector spaces are guaranteed to match.
 6. **int8 quantization** — vectors are L2-normalized (components in [−1, 1]), so a
    fixed scale of 127 quantizes each dimension to one byte with no per-shard
@@ -60,10 +60,10 @@ Pipeline (`pipeline/embed/index.ts`, build-time only, deterministic, no network)
 
 ### What the browser downloads
 
-| Artifact | Purpose | Size (gzip) |
-|---|---|---|
-| `vocab/words` | word table (~11k words × 204-D int8) + IDF | **~1.9 MB** |
-| `vectors/<year>` | passage vectors for that year (int8) | ~0.2–0.4 MB each |
+| Artifact         | Purpose                                    | Size (gzip)      |
+| ---------------- | ------------------------------------------ | ---------------- |
+| `vocab/words`    | word table (~11k words × 204-D int8) + IDF | **~1.9 MB**      |
+| `vectors/<year>` | passage vectors for that year (int8)       | ~0.2–0.4 MB each |
 
 A filtered search ("2024 only") downloads the word table once plus a single year
 of vectors. The whole corpus is ~4 MB — versus ~28 MB for the transformer path —
@@ -93,12 +93,14 @@ lands near the relevant sentence in a 10-minute answer.
 ## 4. Tradeoffs — honest accounting
 
 **What we gain**
+
 - ~7× smaller download, no WASM/WebGPU runtime, instant query embedding.
 - Fully self-contained & deterministic builds — no model to fetch, reproducible.
 - Vocabulary is the corpus vocabulary, so the table is naturally compact and its
   neighbors are domain-tuned (physics/philosophy) rather than generic.
 
 **What we give up**
+
 - Static embeddings capture **topical/distributional** similarity, not deep
   compositional meaning. They cannot model word order or negation ("not a boson"
   ≈ "a boson"). A transformer would.
@@ -139,9 +141,9 @@ client and caches invalidate correctly when the space changes.
 
 `pipeline/embed/index.ts` → `EMBED_CONFIG`:
 
-| Knob | Default | Effect |
-|---|---|---|
-| `dim` | 256 (→ ~204 kept) | quality vs. table & vector size |
-| `minWordFreq` | 5 | vocab size / download vs. rare-word recall |
-| `window` | 5 | topical vs. syntactic co-occurrence |
-| `answerChunkWords` / `maxAnswerChunks` | 220 / 3 | passage granularity vs. vector count |
+| Knob                                   | Default           | Effect                                     |
+| -------------------------------------- | ----------------- | ------------------------------------------ |
+| `dim`                                  | 256 (→ ~204 kept) | quality vs. table & vector size            |
+| `minWordFreq`                          | 5                 | vocab size / download vs. rare-word recall |
+| `window`                               | 5                 | topical vs. syntactic co-occurrence        |
+| `answerChunkWords` / `maxAnswerChunks` | 220 / 3           | passage granularity vs. vector count       |

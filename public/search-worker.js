@@ -36,7 +36,9 @@ const distance = (a, b) => {
   return row[b.length];
 };
 const fuzzy = (term, candidate) =>
-  term.length > 3 && candidate.length <= term.length + 2 && distance(term, candidate) <= (term.length > 7 ? 2 : 1);
+  term.length > 3 &&
+  candidate.length <= term.length + 2 &&
+  distance(term, candidate) <= (term.length > 7 ? 2 : 1);
 const dataBase = new URL("data/manifest.json", self.location.href);
 const shardUrl = (shard) => new URL(shard.url, dataBase);
 const fetchShard = async (kind, key) => {
@@ -53,32 +55,46 @@ const fetchShard = async (kind, key) => {
   return response.ok ? response.json() : Promise.reject(response.status);
 };
 async function keywordsFor(years) {
-  await Promise.all(years.map(async (year) => {
-    if (keywordShards.has(year)) return;
-    const payload = await fetchShard("keyword", year);
-    // Tag the cached payload with its shard key so keywordRank can build
-    // globally-unique candidate ids ("year:recordId") — without it, records at
-    // the same ordinal in different year shards collide. The postings Map is
-    // built once here (not per query in keywordRank): rebuilding it from the
-    // serialized `t` array on every keystroke, across every loaded shard,
-    // dominated query latency for the unfiltered (all-years) case.
-    if (payload) keywordShards.set(year, { ...payload, key: year, postings: new Map(payload.t) });
-  }));
+  await Promise.all(
+    years.map(async (year) => {
+      if (keywordShards.has(year)) return;
+      const payload = await fetchShard("keyword", year);
+      // Tag the cached payload with its shard key so keywordRank can build
+      // globally-unique candidate ids ("year:recordId") — without it, records at
+      // the same ordinal in different year shards collide. The postings Map is
+      // built once here (not per query in keywordRank): rebuilding it from the
+      // serialized `t` array on every keystroke, across every loaded shard,
+      // dominated query latency for the unfiltered (all-years) case.
+      if (payload) keywordShards.set(year, { ...payload, key: year, postings: new Map(payload.t) });
+    })
+  );
   return years.map((year) => keywordShards.get(year)).filter(Boolean);
 }
 function decodeDocs(payload) {
-  const decode = (tokens) => tokens.map((token) => typeof token === "number" ? payload.d[token] : token).join("");
-  return payload.r.map(([segmentId, type, startSec, endSec, order, episodeId, question, answer]) => ({
-    segmentId, type, startSec, endSec, order, episodeId, questionText: decode(question), answerText: decode(answer)
-  }));
+  const decode = (tokens) =>
+    tokens.map((token) => (typeof token === "number" ? payload.d[token] : token)).join("");
+  return payload.r.map(
+    ([segmentId, type, startSec, endSec, order, episodeId, question, answer]) => ({
+      segmentId,
+      type,
+      startSec,
+      endSec,
+      order,
+      episodeId,
+      questionText: decode(question),
+      answerText: decode(answer)
+    })
+  );
 }
 async function docsFor(years) {
-  await Promise.all(years.map(async (year) => {
-    if (!docsShards.has(year)) {
-      const payload = await fetchShard("docs", year);
-      docsShards.set(year, payload ? decodeDocs(payload) : []);
-    }
-  }));
+  await Promise.all(
+    years.map(async (year) => {
+      if (!docsShards.has(year)) {
+        const payload = await fetchShard("docs", year);
+        docsShards.set(year, payload ? decodeDocs(payload) : []);
+      }
+    })
+  );
   return years.flatMap((year) => docsShards.get(year) || []);
 }
 
@@ -102,14 +118,25 @@ async function ensureVocab() {
   return vocab;
 }
 async function vectorsFor(years) {
-  await Promise.all(years.map(async (year) => {
-    if (vectorShards.has(year)) return;
-    const payload = await fetchShard("vectors", year);
-    vectorShards.set(
-      year,
-      payload ? { dim: payload.dim, seg: payload.seg, sec: payload.sec, off: payload.off, data: decodeInt8(payload.data), count: payload.seg.length } : null
-    );
-  }));
+  await Promise.all(
+    years.map(async (year) => {
+      if (vectorShards.has(year)) return;
+      const payload = await fetchShard("vectors", year);
+      vectorShards.set(
+        year,
+        payload
+          ? {
+              dim: payload.dim,
+              seg: payload.seg,
+              sec: payload.sec,
+              off: payload.off,
+              data: decodeInt8(payload.data),
+              count: payload.seg.length
+            }
+          : null
+      );
+    })
+  );
 }
 /** IDF-weighted mean-pool the query into an L2-normalized float vector. */
 function embedQuery(query) {
@@ -206,7 +233,9 @@ function snippetAround(text, terms, radius = 170) {
 }
 function suggestions(shards, prefix) {
   if (!prefix) return [];
-  return [...new Set(shards.flatMap((shard) => shard.a.filter((term) => term.startsWith(prefix))))].slice(0, 8);
+  return [
+    ...new Set(shards.flatMap((shard) => shard.a.filter((term) => term.startsWith(prefix))))
+  ].slice(0, 8);
 }
 
 /** Keyword + fuzzy BM-ish ranking over the loaded keyword shards. */
@@ -219,17 +248,26 @@ function keywordRank(shards, terms, state) {
       const exact = postingMap.get(term);
       if (exact) {
         matched = true;
-        for (const [recordId, weight] of exact) candidates.set(`${shard.key}:${recordId}`, (candidates.get(`${shard.key}:${recordId}`) || 0) + weight * 10);
+        for (const [recordId, weight] of exact)
+          candidates.set(
+            `${shard.key}:${recordId}`,
+            (candidates.get(`${shard.key}:${recordId}`) || 0) + weight * 10
+          );
       } else {
         for (const [word, posting] of postingMap) {
           if (!fuzzy(term, word)) continue;
           matched = true;
-          for (const [recordId, weight] of posting) candidates.set(`${shard.key}:${recordId}`, (candidates.get(`${shard.key}:${recordId}`) || 0) + weight);
+          for (const [recordId, weight] of posting)
+            candidates.set(
+              `${shard.key}:${recordId}`,
+              (candidates.get(`${shard.key}:${recordId}`) || 0) + weight
+            );
         }
       }
       if (!matched) candidates.set(`missing:${term}`, -Infinity);
     }
-    if (!terms.length) shard.r.forEach((_, recordId) => candidates.set(`${shard.key}:${recordId}`, 0));
+    if (!terms.length)
+      shard.r.forEach((_, recordId) => candidates.set(`${shard.key}:${recordId}`, 0));
   }
   return [...candidates]
     .filter(([key, score]) => !key.startsWith("missing:") && Number.isFinite(score))
@@ -239,15 +277,23 @@ function keywordRank(shards, terms, state) {
       const [segmentId, recordType, startSec, endSec, order, episodeId] = shard.r[Number(recordId)];
       return { segmentId, type: recordType, startSec, endSec, order, episodeId, score };
     })
-    .filter((record) => (!state.type || state.type === "all" || record.type === state.type) && (!state.episode || record.episodeId === state.episode))
+    .filter(
+      (record) =>
+        (!state.type || state.type === "all" || record.type === state.type) &&
+        (!state.episode || record.episodeId === state.episode)
+    )
     .sort((left, right) => right.score - left.score || right.startSec - left.startSec)
     .slice(0, 240);
 }
 
 /** Resolve ranked (segmentId, score, …) records into displayable result cards. */
 async function buildResults(ranked, terms) {
-  const selectedYears = [...new Set(ranked.map((record) => String(episodeById.get(record.episodeId)?.year)))].filter(Boolean);
-  const documents = new Map((await docsFor(selectedYears)).map((record) => [record.segmentId, record]));
+  const selectedYears = [
+    ...new Set(ranked.map((record) => String(episodeById.get(record.episodeId)?.year)))
+  ].filter(Boolean);
+  const documents = new Map(
+    (await docsFor(selectedYears)).map((record) => [record.segmentId, record])
+  );
   return ranked.flatMap((record) => {
     const document = documents.get(record.segmentId);
     const episodeMeta = episodeById.get(record.episodeId);
@@ -258,16 +304,22 @@ async function buildResults(ranked, terms) {
     const isSemanticPassage = record.offset !== undefined && record.offset >= 0;
     const source = document.answerText || document.questionText;
     const preview = isSemanticPassage
-      ? snippetAround(source.slice(record.offset), terms, 200) || source.slice(record.offset, record.offset + 340)
+      ? snippetAround(source.slice(record.offset), terms, 200) ||
+        source.slice(record.offset, record.offset + 340)
       : snippetAround(source, terms);
-    return [{
-      ...document,
-      startSec: record.startSec ?? document.startSec,
-      episode: episodeMeta,
-      score: record.score,
-      match: preview,
-      highlights: { question: ranges(document.questionText, terms), answer: ranges(preview, terms) }
-    }];
+    return [
+      {
+        ...document,
+        startSec: record.startSec ?? document.startSec,
+        episode: episodeMeta,
+        score: record.score,
+        match: preview,
+        highlights: {
+          question: ranges(document.questionText, terms),
+          answer: ranges(preview, terms)
+        }
+      }
+    ];
   });
 }
 
@@ -301,7 +353,13 @@ self.onmessage = async ({ data }) => {
 
   if (!wantsSemantic) {
     const ranked = keywordRank(keyShards, terms, state).slice(0, 200);
-    self.postMessage({ id, type: "results", results: await buildResults(ranked, terms), terms, suggestions: suggestionList });
+    self.postMessage({
+      id,
+      type: "results",
+      results: await buildResults(ranked, terms),
+      terms,
+      suggestions: suggestionList
+    });
     return;
   }
 
@@ -327,6 +385,14 @@ self.onmessage = async ({ data }) => {
   await vectorsFor(years);
   const queryVector = embedQuery(query);
   const semantic = queryVector ? semanticRank(queryVector, years, state) : [];
-  const ranked = (mode === "semantic" ? semantic : fuse(keywordRank(keyShards, terms, state), semantic)).slice(0, 200);
-  self.postMessage({ id, type: "results", results: await buildResults(ranked, terms), terms, suggestions: suggestionList });
+  const ranked = (
+    mode === "semantic" ? semantic : fuse(keywordRank(keyShards, terms, state), semantic)
+  ).slice(0, 200);
+  self.postMessage({
+    id,
+    type: "results",
+    results: await buildResults(ranked, terms),
+    terms,
+    suggestions: suggestionList
+  });
 };
