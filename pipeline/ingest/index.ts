@@ -57,9 +57,14 @@ function absoluteUrl(href: string, base: string) {
   return new URL(href, base).toString();
 }
 
+// Some older WordPress pages include malformed inline CSS. It is unrelated to content.
+function documentFromHtml(html: string) {
+  return new JSDOM(html.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")).window.document;
+}
+
 /** Finds AMA entries on one WordPress archive page. */
 export function discoverFromArchive(html: string, archiveUrl: string): DiscoveredEpisode[] {
-  const document = new JSDOM(html).window.document;
+  const document = documentFromHtml(html);
   const found = new Map<string, DiscoveredEpisode>();
   for (const link of document.querySelectorAll("a[href]")) {
     const title = cleanText(link.textContent ?? "");
@@ -74,7 +79,7 @@ export function discoverFromArchive(html: string, archiveUrl: string): Discovere
 }
 
 function nextArchiveUrl(html: string, currentUrl: string) {
-  const document = new JSDOM(html).window.document;
+  const document = documentFromHtml(html);
   const next = document.querySelector('a[rel="next"], .nav-next a, .next.page-numbers');
   return next?.getAttribute("href") ? absoluteUrl(next.getAttribute("href")!, currentUrl) : null;
 }
@@ -129,16 +134,41 @@ function canonicalSpeaker(value: string) {
 
 /** Extracts only the expandable transcript; archive questions and footer text are excluded. */
 export function extractTranscript(html: string) {
-  const document = new JSDOM(html).window.document;
+  const document = documentFromHtml(html);
   const bodyText = document.body.textContent?.replace(/\r/g, "") ?? "";
-  const start = bodyText.search(/Click to Show Full Transcript/i);
-  if (start < 0) throw new Error("Official full transcript marker was not found");
-  const afterMarker = bodyText.slice(start).replace(/^.*?Click to Show Full Transcript\s*/is, "");
+  // The site used both labels during its WordPress/accordion-template transition.
+  const marker = /Click to Show (?:Full |Episode )?Transcript/i;
+  const match = marker.exec(bodyText);
+  if (!match || match.index === undefined) throw new Error("Official transcript marker was not found");
+  const afterMarker = bodyText.slice(match.index + match[0].length).replace(/^\s*/u, "");
   const end = afterMarker.search(/\n\s*(?:←\s*Previous Post|Leave a Comment|Related Posts)\b/i);
   const transcriptText = cleanMultiline(end >= 0 ? afterMarker.slice(0, end) : afterMarker);
   if (!parseTranscriptCues(transcriptText).length)
     throw new Error("Official transcript contains no timestamped speaker cues");
   return { transcriptUrl: "", transcriptText };
+}
+
+type LegacyQuestion = { speaker: string; text: string };
+
+/** The earliest AMA post publishes questions in an accordion but no text transcript. */
+export function extractLegacyQuestions(html: string): LegacyQuestion[] {
+  const document = documentFromHtml(html);
+  const paragraphs = [...document.querySelectorAll("article .entry-content p, article p")];
+  const start = paragraphs.findIndex((paragraph) => /Click to Show AMA Q/i.test(paragraph.textContent ?? ""));
+  if (start < 0) return [];
+  const questions: LegacyQuestion[] = [];
+  for (const paragraph of paragraphs.slice(start + 1)) {
+    const source = paragraph.innerHTML;
+    if (/\[\/accordion-item\]|Click to Show (?:Full |Episode )?Transcript/i.test(source)) break;
+    const lines = source
+      .split(/<br\s*\/?\s*>/i)
+      .map((line) => cleanText(new JSDOM(`<body>${line}</body>`).window.document.body.textContent ?? ""))
+      .filter(Boolean);
+    if (lines.length < 2) continue;
+    const [speaker, ...question] = lines;
+    questions.push({ speaker: canonicalSpeaker(speaker), text: question.join(" ") });
+  }
+  return questions;
 }
 
 function countTokens(value: string) {
@@ -222,8 +252,43 @@ function findYoutubeId(document: Document) {
   return null;
 }
 
+function normalizeQuestionListEpisode(discovered: DiscoveredEpisode, html: string, number: number): CanonicalEpisode {
+  const document = documentFromHtml(html);
+  const questions = extractLegacyQuestions(html);
+  if (!questions.length) throw new Error(`${episodeIdFor(discovered.publishDate)}: no official questions found`);
+  const episodeId = episodeIdFor(discovered.publishDate);
+  const segments = questions.map((question, order) => ({
+    segmentId: `${episodeId}#q${String(order + 1).padStart(2, "0")}`,
+    type: "question" as const,
+    questionText: question.text,
+    answerText: "",
+    startSec: null,
+    endSec: null,
+    order,
+    tokens: countTokens(question.text),
+    speakerNames: [question.speaker]
+  }));
+  const canonical = {
+    episodeId,
+    number,
+    title: discovered.title,
+    publishDate: discovered.publishDate,
+    sourceUrl: discovered.sourceUrl,
+    transcriptUrl: discovered.sourceUrl,
+    transcriptText: questions.map((question) => `${question.speaker}: ${question.text}`).join("\n\n"),
+    speakers: [...new Set(questions.map((question) => question.speaker))],
+    audioUrl: findAudioUrl(document, discovered.sourceUrl),
+    youtubeId: findYoutubeId(document),
+    durationSec: 1,
+    segments,
+    contentHash: ""
+  };
+  canonical.contentHash = sha256(stableJson({ ...canonical, contentHash: undefined }));
+  return episodeSchema.parse(canonical);
+}
+
 export function normalizeEpisode(discovered: DiscoveredEpisode, html: string, number: number): CanonicalEpisode {
-  const document = new JSDOM(html).window.document;
+  const document = documentFromHtml(html);
   const transcript = extractTranscript(html);
   const segmentsWithoutIds = segmentsFromTranscript(transcript.transcriptText);
   const segments = segmentsWithoutIds.map((segment, order) => ({
@@ -340,7 +405,14 @@ export async function ingest(options: IngestOptions = {}): Promise<IngestResult>
     const cached = await readCachedSnapshot(rawCacheDirectory, item.sourceUrl);
     const html = cached ?? (await fetchText(item.sourceUrl));
     if (!cached) await cacheSnapshot(rawCacheDirectory, item.sourceUrl, html);
-    const episode = normalizeEpisode(item, html, nextNumber++);
+    const number = nextNumber++;
+    let episode: CanonicalEpisode;
+    try {
+      episode = normalizeEpisode(item, html, number);
+    } catch (error) {
+      if (!(error instanceof Error) || !error.message.includes("transcript marker")) throw error;
+      episode = normalizeQuestionListEpisode(item, html, number);
+    }
     await mkdir(destination, { recursive: true });
     await writeFile(join(destination, `${basename(episode.episodeId)}.json`), stableJson(episode));
     processed.push(episode.episodeId);

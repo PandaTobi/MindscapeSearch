@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   discoverEpisodes,
   ingest,
+  extractLegacyQuestions,
   normalizeEpisode,
   parseTranscriptCues
 } from "../pipeline/ingest";
@@ -32,6 +33,8 @@ const januaryEpisode = `
   </article></body></html>
 `;
 const decemberEpisode = januaryEpisode.replaceAll("January", "December");
+
+const legacyTranscriptEpisode = januaryEpisode.replace("Click to Show Full Transcript", "Click to Show Episode Transcript");
 
 function fixtureFetch(calls: string[]) {
   return async (url: string) => {
@@ -90,6 +93,26 @@ describe("AMA ingest", () => {
       speakerNames: expect.arrayContaining(["Ada Lovelace", "Sean Carroll"])
     });
     expect(episode.contentHash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("accepts the older official Episode Transcript accordion label", () => {
+    const episode = normalizeEpisode(
+      { title: "AMA | January 2024", publishDate: "2024-01-08", sourceUrl: "https://example.test/ama" },
+      legacyTranscriptEpisode,
+      1
+    );
+    expect(episode.transcriptText).toContain("What is time?");
+  });
+
+  it("uses the official question-only accordion when a legacy page has no transcript block", () => {
+    const legacy = `<article><div class="entry-content">
+      <p>[accordion title="Click to Show AMA Questions"]Click above to close.</p>
+      <p>Ada Lovelace<br>What is time?</p><p>Bob<br>Why now?</p><p>[/accordion-item][/accordion]</p>
+    </div></article>`;
+    expect(extractLegacyQuestions(legacy)).toEqual([
+      { speaker: "Ada Lovelace", text: "What is time?" },
+      { speaker: "Bob", text: "Why now?" }
+    ]);
   });
 
   it("writes snapshots and processes an episode only on its first discovery", async () => {
