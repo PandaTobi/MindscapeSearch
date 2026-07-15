@@ -1,4 +1,5 @@
 let manifest;
+let episodeById = new Map(); // id → episode meta, built at init (see onmessage)
 const keywordShards = new Map();
 const docsShards = new Map();
 const vectorShards = new Map();
@@ -57,8 +58,11 @@ async function keywordsFor(years) {
     const payload = await fetchShard("keyword", year);
     // Tag the cached payload with its shard key so keywordRank can build
     // globally-unique candidate ids ("year:recordId") — without it, records at
-    // the same ordinal in different year shards collide.
-    if (payload) keywordShards.set(year, { ...payload, key: year });
+    // the same ordinal in different year shards collide. The postings Map is
+    // built once here (not per query in keywordRank): rebuilding it from the
+    // serialized `t` array on every keystroke, across every loaded shard,
+    // dominated query latency for the unfiltered (all-years) case.
+    if (payload) keywordShards.set(year, { ...payload, key: year, postings: new Map(payload.t) });
   }));
   return years.map((year) => keywordShards.get(year)).filter(Boolean);
 }
@@ -209,7 +213,7 @@ function suggestions(shards, prefix) {
 function keywordRank(shards, terms, state) {
   const candidates = new Map();
   for (const shard of shards) {
-    const postingMap = new Map(shard.t);
+    const postingMap = shard.postings; // built once in keywordsFor
     for (const term of terms) {
       let matched = false;
       const exact = postingMap.get(term);
@@ -242,11 +246,11 @@ function keywordRank(shards, terms, state) {
 
 /** Resolve ranked (segmentId, score, …) records into displayable result cards. */
 async function buildResults(ranked, terms) {
-  const selectedYears = [...new Set(ranked.map((record) => String(manifest.episodes.find((item) => item.id === record.episodeId)?.year)))].filter(Boolean);
+  const selectedYears = [...new Set(ranked.map((record) => String(episodeById.get(record.episodeId)?.year)))].filter(Boolean);
   const documents = new Map((await docsFor(selectedYears)).map((record) => [record.segmentId, record]));
   return ranked.flatMap((record) => {
     const document = documents.get(record.segmentId);
-    const episodeMeta = manifest.episodes.find((item) => item.id === record.episodeId);
+    const episodeMeta = episodeById.get(record.episodeId);
     if (!document || !episodeMeta) return [];
     // Semantic hits carry a passage offset → window the preview around that
     // passage. Keyword hits window around the earliest matched term. Both
@@ -270,12 +274,15 @@ async function buildResults(ranked, terms) {
 self.onmessage = async ({ data }) => {
   if (data.type === "init") {
     manifest = data.manifest;
+    // O(1) episode lookups thereafter — buildResults resolves an episode per
+    // result, and this was previously a linear scan of manifest.episodes.
+    episodeById = new Map(manifest.episodes.map((episode) => [episode.id, episode]));
     self.postMessage({ type: "ready" });
     return;
   }
   if (data.type === "episode") {
     const { id, episodeId } = data;
-    const meta = manifest?.episodes.find((item) => item.id === episodeId);
+    const meta = episodeById.get(episodeId);
     const docs = meta ? await docsFor([String(meta.year)]) : [];
     const segments = docs
       .filter((doc) => doc.episodeId === episodeId)
