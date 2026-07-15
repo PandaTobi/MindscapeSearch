@@ -2,46 +2,120 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light;
-  --bg: #fbfbfa;
-  --panel: #fff;
-  --ink: #191919;
-  --muted: #777;
-  --line: #e5e5e2;
-  --accent: #6456d9;
-}
+/*
+ * Dark is the canonical theme (see DESIGN.md §1): a late-night reference tool,
+ * near-black surface, warm-gray text ramp, one accent reserved for interaction
+ * states and highlights. Light mode is derived from it, not the reverse.
+ */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #101010;
-  --panel: #181818;
-  --ink: #f4f4f2;
-  --muted: #a4a4a0;
-  --line: #30302d;
-  --accent: #a99fff;
+  --bg: #0b0c0e;
+  --bg-raised: #111317;
+  --border: #1f2228;
+  --text-primary: #edeef0;
+  --text-secondary: #9ba1ab;
+  --text-tertiary: #5c6370;
+  --accent: #7c8aff;
+  --accent-contrast: #0b0c0e;
+  --highlight: #f5d66b;
+  --highlight-bg: rgb(245 214 107 / 18%);
 }
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #fbfbfa;
+  --bg-raised: #f2f2f0;
+  --border: #e4e4e1;
+  --text-primary: #16171a;
+  --text-secondary: #52565f;
+  --text-tertiary: #82868f;
+  --accent: #5457d5;
+  --accent-contrast: #ffffff;
+  --highlight: #f5d66b;
+  --highlight-bg: rgb(212 163 14 / 22%);
+}
+
 * {
   box-sizing: border-box;
 }
 html {
   background: var(--bg);
-  color: var(--ink);
+  color-scheme: light dark;
 }
 body {
   margin: 0;
   min-width: 320px;
   background: var(--bg);
-  color: var(--ink);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text-primary);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings:
+    "cv11",
+    "ss01";
+}
+code,
+kbd,
+.font-mono {
+  font-family: var(--font-mono), ui-monospace, "SF Mono", monospace;
 }
 button,
 input,
 select {
   font: inherit;
+  color: inherit;
 }
 button {
   cursor: pointer;
 }
 ::selection {
   background: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* Focus is always visible — never the browser default, never invisible. */
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+mark.match-highlight {
+  background: var(--highlight-bg);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.shimmer-bg {
+  background-image: linear-gradient(
+    90deg,
+    var(--bg-raised) 25%,
+    color-mix(in srgb, var(--border) 60%, var(--bg-raised)) 50%,
+    var(--bg-raised) 75%
+  );
+  background-size: 200% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
