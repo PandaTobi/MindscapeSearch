@@ -23,7 +23,7 @@ describe("readQueryState", () => {
 
   it("falls back to safe defaults for unknown mode/type values", () => {
     const state = read("mode=telepathy&type=banana");
-    expect(state.mode).toBe("keyword");
+    expect(state.mode).toBe("hybrid");
     expect(state.type).toBe("all");
   });
 });

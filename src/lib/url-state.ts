@@ -11,7 +11,7 @@ export interface QueryState {
 }
 export const defaultQueryState: QueryState = {
   query: "",
-  mode: "keyword",
+  mode: "hybrid",
   year: "",
   type: "all",
   episode: "",
@@ -23,7 +23,7 @@ export function readQueryState(params = new URLSearchParams(window.location.sear
   const type = params.get("type");
   return {
     query: params.get("q") ?? "",
-    mode: mode === "semantic" || mode === "hybrid" ? mode : "keyword",
+    mode: mode === "semantic" || mode === "keyword" ? mode : "hybrid",
     year: params.get("year") ?? "",
     type:
       type === "question" || type === "answer" || type === "intro" || type === "other"
@@ -36,7 +36,7 @@ export function readQueryState(params = new URLSearchParams(window.location.sear
 export function writeQueryState(state: QueryState) {
   const params = new URLSearchParams();
   if (state.query) params.set("q", state.query);
-  if (state.mode !== "keyword") params.set("mode", state.mode);
+  if (state.mode !== "hybrid") params.set("mode", state.mode);
   if (state.year) params.set("year", state.year);
   if (state.type !== "all") params.set("type", state.type);
   if (state.episode) params.set("e", state.episode);

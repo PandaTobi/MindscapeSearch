@@ -3,8 +3,8 @@
 import type { SearchMode } from "@/lib/types";
 
 const MODES: Array<{ value: SearchMode; label: string; shortcut: string }> = [
-  { value: "keyword", label: "Keyword", shortcut: "g k" },
   { value: "hybrid", label: "Hybrid", shortcut: "g h" },
+  { value: "keyword", label: "Keyword", shortcut: "g k" },
   { value: "semantic", label: "Semantic", shortcut: "g s" }
 ];
 

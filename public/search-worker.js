@@ -344,7 +344,7 @@ self.onmessage = async ({ data }) => {
   }
   if (data.type !== "search" || !manifest) return;
   const { id, state } = data;
-  const { query = "", year, mode = "keyword" } = state;
+  const { query = "", year, mode = "hybrid" } = state;
   const terms = tokenizeTerms(query);
   const years = year ? [year] : manifest.facets.years.map(String);
   const keyShards = await keywordsFor(years);
