@@ -3,7 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import { HighlightedText } from "@/components/highlighted-text";
 import { countMatches } from "@/lib/highlight";
-import { episodeBadge, mediaUrl, questionLabel, secondsToClock } from "@/lib/format";
+import { episodeBadge, mediaUrl, questionLabel, secondsToClock, youtubeUrl } from "@/lib/format";
 import { segmentDeepLink } from "@/lib/url-state";
 import type { SearchMode, SearchResult } from "@/lib/types";
 
@@ -40,6 +40,7 @@ export function ResultCard({
   const hasExactMatch = answerRanges.length > 0 || questionRanges.length > 0;
   const isSemanticOnly = mode !== "keyword" && terms.length > 0 && !hasExactMatch;
   const matchCount = countMatches(result.answerText, terms);
+  const timestampUrl = youtubeUrl(result.episode.youtubeId, result.startSec);
 
   const copyLink = async () => {
     try {
@@ -73,7 +74,19 @@ export function ResultCard({
         <span>{episodeBadge(result.episode.date)}</span>
         <span aria-hidden="true">—</span>
         <span>{questionLabel(result.segmentId)}</span>
-        <span className="ml-auto">{secondsToClock(result.startSec)}</span>
+        {timestampUrl ? (
+          <a
+            className="ml-auto transition-colors duration-[120ms] hover:text-text-primary focus-visible:text-text-primary"
+            href={timestampUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Watch on YouTube at ${secondsToClock(result.startSec)}`}
+          >
+            {secondsToClock(result.startSec)}
+          </a>
+        ) : (
+          <span className="ml-auto">{secondsToClock(result.startSec)}</span>
+        )}
       </div>
 
       {result.questionText && (

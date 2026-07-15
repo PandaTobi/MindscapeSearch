@@ -7,10 +7,13 @@ export const secondsToClock = (seconds: number | null) => {
     ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
     : `${m}:${String(s).padStart(2, "0")}`;
 };
-export const mediaUrl = (youtubeId: string | null, audioUrl: string, start: number | null) =>
+export const youtubeUrl = (youtubeId: string | null, start: number | null) =>
   youtubeId
     ? `https://www.youtube.com/watch?v=${youtubeId}${start === null ? "" : `&t=${start}s`}`
-    : `${audioUrl}${start === null ? "" : `#t=${start}`}`;
+    : null;
+
+export const mediaUrl = (youtubeId: string | null, audioUrl: string, start: number | null) =>
+  youtubeUrl(youtubeId, start) ?? `${audioUrl}${start === null ? "" : `#t=${start}`}`;
 
 /** "AMA · JUNE 2026" — the meta-row episode badge, per DESIGN.md §2.3. */
 export const episodeBadge = (date: string) =>
