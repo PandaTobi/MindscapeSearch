@@ -9,6 +9,7 @@ import type { SearchMode } from "@/lib/types";
 export function HomeHero({
   query,
   onQueryChange,
+  onQuerySubmit,
   mode,
   onModeChange,
   suggestions,
@@ -19,13 +20,14 @@ export function HomeHero({
   onToggleTheme,
   inputRef,
   onArrowIntoResults,
-  onEnterActiveCard,
+  onSubmitQuery,
   episodeCount,
   questionCount,
   updated
 }: {
   query: string;
   onQueryChange: (value: string) => void;
+  onQuerySubmit: (value: string) => void;
   mode: SearchMode;
   onModeChange: (mode: SearchMode) => void;
   suggestions: string[];
@@ -36,7 +38,7 @@ export function HomeHero({
   onToggleTheme: () => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
   onArrowIntoResults: (direction: "down" | "up") => void;
-  onEnterActiveCard: (withModifier: boolean) => void;
+  onSubmitQuery: () => void;
   episodeCount: number;
   questionCount: number;
   updated: string | null;
@@ -60,7 +62,7 @@ export function HomeHero({
           loadingIndex={loadingIndex}
           inputRef={inputRef}
           onArrowIntoResults={onArrowIntoResults}
-          onEnterActiveCard={onEnterActiveCard}
+          onSubmitQuery={onSubmitQuery}
         />
         <div className="mt-3 flex flex-col items-center gap-2">
           <ModeSwitch mode={mode} onChange={onModeChange} semanticCached={semanticCached} />
@@ -70,7 +72,7 @@ export function HomeHero({
           <ModelDownloadStrip state={downloadStripState} />
         </div>
         <div className="mt-10">
-          <SampleQueries onSelect={onQueryChange} />
+          <SampleQueries onSelect={onQuerySubmit} />
         </div>
       </div>
       {(episodeCount > 0 || questionCount > 0) && (

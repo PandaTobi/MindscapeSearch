@@ -45,6 +45,7 @@ const isTypingTarget = (el: Element | null) =>
 export function SearchApp() {
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [state, setState] = useState<QueryState>(defaultQueryState);
+  const [draftQuery, setDraftQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [terms, setTerms] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -93,6 +94,7 @@ export function SearchApp() {
   useEffect(() => {
     const initial = readQueryState();
     setState(initial);
+    setDraftQuery(initial.query);
     if (initial.query || initial.segment) setActivated(true);
     initialSegmentRef.current = initial.segment || null;
     setTheme(document.documentElement.dataset.theme ?? "dark");
@@ -223,27 +225,22 @@ export function SearchApp() {
     setState((v) => ({ ...v, ...patch }));
   }, []);
 
-  const setQuery = useCallback(
-    (query: string) => {
-      if (query && !activated) setActivated(true);
-      update({ query });
-    },
-    [activated, update]
-  );
+  const clearQuery = useCallback(() => {
+    setDraftQuery("");
+    update({ query: "" });
+  }, [update]);
 
   const runQuery = useCallback(
     (query: string, mode?: SearchMode) => {
+      const trimmedQuery = query.trim();
+      setDraftQuery(query);
+      if (!trimmedQuery) return;
       setActivated(true);
       update({ query, ...(mode ? { mode } : {}) });
+      setRecents(pushRecentSearch(trimmedQuery, mode ?? stateRef.current.mode));
     },
     [update]
   );
-
-  const commitToRecents = useCallback(() => {
-    const q = stateRef.current.query.trim();
-    if (!q) return;
-    setRecents(pushRecentSearch(q, stateRef.current.mode));
-  }, []);
 
   const moveActiveIndex = useCallback((direction: "down" | "up") => {
     const count = resultsRef.current.length;
@@ -281,13 +278,7 @@ export function SearchApp() {
     [openTranscript]
   );
 
-  const onEnterFromInput = useCallback(
-    (withModifier: boolean) => {
-      commitToRecents();
-      activateCard(withModifier);
-    },
-    [commitToRecents, activateCard]
-  );
+  const submitDraftQuery = useCallback(() => runQuery(draftQuery), [draftQuery, runQuery]);
 
   const copyActiveCardLink = useCallback(() => {
     const active = resultsRef.current[activeIndexRef.current];
@@ -342,7 +333,7 @@ export function SearchApp() {
         if (palettteOpen) return setPaletteOpen(false);
         if (filtersOpen) return setFiltersOpen(false);
         if (stateRef.current.segment) return closePanel();
-        if (stateRef.current.query) return setQuery("");
+        if (stateRef.current.query) return clearQuery();
         if (activeIndexRef.current >= 0) {
           setActiveIndex(-1);
           (document.activeElement as HTMLElement | null)?.blur?.();
@@ -385,7 +376,7 @@ export function SearchApp() {
     palettteOpen,
     filtersOpen,
     closePanel,
-    setQuery,
+    clearQuery,
     update,
     moveActiveIndex,
     activateCard,
@@ -449,8 +440,8 @@ export function SearchApp() {
     inFlight && results.length === 0 && !!state.query && status !== "Ready" && !loadingIndex;
 
   const sharedHeaderProps = {
-    query: state.query,
-    onQueryChange: setQuery,
+    query: draftQuery,
+    onQueryChange: setDraftQuery,
     mode: state.mode,
     onModeChange: (mode: SearchMode) => update({ mode }),
     suggestions,
@@ -461,7 +452,7 @@ export function SearchApp() {
     onToggleTheme: flipTheme,
     inputRef,
     onArrowIntoResults: moveActiveIndex,
-    onEnterActiveCard: onEnterFromInput
+    onSubmitQuery: submitDraftQuery
   };
 
   return (
@@ -469,6 +460,7 @@ export function SearchApp() {
       {!activated ? (
         <HomeHero
           {...sharedHeaderProps}
+          onQuerySubmit={runQuery}
           episodeCount={episodeCount}
           questionCount={questionCount}
           updated={updated}

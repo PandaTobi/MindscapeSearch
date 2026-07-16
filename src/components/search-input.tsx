@@ -9,7 +9,7 @@ interface SearchInputProps {
   loadingIndex: boolean;
   inputRef: React.RefObject<HTMLInputElement | null>;
   onArrowIntoResults: (direction: "down" | "up") => void;
-  onEnterActiveCard: (withModifier: boolean) => void;
+  onSubmitQuery: () => void;
 }
 
 const lastToken = (query: string) => query.slice(query.lastIndexOf(" ") + 1);
@@ -21,7 +21,7 @@ export function SearchInput({
   loadingIndex,
   inputRef,
   onArrowIntoResults,
-  onEnterActiveCard
+  onSubmitQuery
 }: SearchInputProps) {
   const [focused, setFocused] = useState(false);
   const [highlighted, setHighlighted] = useState(-1);
@@ -97,7 +97,8 @@ export function SearchInput({
               return;
             }
             if (event.key === "Enter") {
-              onEnterActiveCard(event.metaKey || event.ctrlKey);
+              event.preventDefault();
+              onSubmitQuery();
               return;
             }
             if (!visible && (event.key === "ArrowDown" || event.key === "ArrowUp")) {

@@ -22,7 +22,7 @@ export function SearchHeader({
   onOpenFilters,
   inputRef,
   onArrowIntoResults,
-  onEnterActiveCard
+  onSubmitQuery
 }: {
   query: string;
   onQueryChange: (value: string) => void;
@@ -38,7 +38,7 @@ export function SearchHeader({
   onOpenFilters: () => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
   onArrowIntoResults: (direction: "down" | "up") => void;
-  onEnterActiveCard: (withModifier: boolean) => void;
+  onSubmitQuery: () => void;
 }) {
   const [scrolled, setScrolled] = useState(false);
   const sentinel = useRef<HTMLDivElement>(null);
@@ -72,7 +72,7 @@ export function SearchHeader({
               loadingIndex={loadingIndex}
               inputRef={inputRef}
               onArrowIntoResults={onArrowIntoResults}
-              onEnterActiveCard={onEnterActiveCard}
+              onSubmitQuery={onSubmitQuery}
             />
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
               <ModeSwitch mode={mode} onChange={onModeChange} semanticCached={semanticCached} />
