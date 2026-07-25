@@ -75,12 +75,38 @@ export function HomeHero({
           <SampleQueries onSelect={onQuerySubmit} />
         </div>
       </div>
-      {(episodeCount > 0 || questionCount > 0) && (
-        <footer className="border-t border-border py-4 text-center font-mono text-micro text-text-tertiary">
-          {episodeCount} episodes · {questionCount.toLocaleString()} questions
-          {updated && ` · updated ${updated}`}
-        </footer>
-      )}
+      <footer className="border-t border-border py-4 text-center font-mono text-micro text-text-tertiary">
+        <div className="flex items-center justify-center gap-4">
+          <a
+            href="https://github.com/PandaTobi"
+            target="_blank"
+            rel="noreferrer"
+            className="transition-colors duration-[120ms] hover:text-text-primary"
+          >
+            GitHub
+          </a>
+          <a
+            href="https://www.linkedin.com/in/andy-jiang42/"
+            target="_blank"
+            rel="noreferrer"
+            className="transition-colors duration-[120ms] hover:text-text-primary"
+          >
+            LinkedIn
+          </a>
+          <a
+            href="mailto:andyjiang1641@gmail.com"
+            className="transition-colors duration-[120ms] hover:text-text-primary"
+          >
+            Email
+          </a>
+        </div>
+        {(episodeCount > 0 || questionCount > 0) && (
+          <div className="mt-1">
+            {episodeCount} episodes · {questionCount.toLocaleString()} questions
+            {updated && ` · updated ${updated}`}
+          </div>
+        )}
+      </footer>
     </main>
   );
 }
