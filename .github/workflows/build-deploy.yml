@@ -25,11 +25,11 @@ jobs:
       - run: npm ci
       - run: npm run ci
         env:
-          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+          # A custom-domain Pages site is served from the domain root, not the
+          # repository subpath used by the former project-site deployment.
+          NEXT_PUBLIC_BASE_PATH: ""
           # Drives canonical URLs, Open Graph tags, robots.txt, and sitemap.xml.
-          # `github.repository_owner`.github.io is the Pages origin for a
-          # project site; a CNAME/custom domain would override this.
-          NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io
+          NEXT_PUBLIC_SITE_URL: https://www.mindscapesear.ch
       - uses: actions/upload-pages-artifact@v3
         with: { path: out }
   deploy:
