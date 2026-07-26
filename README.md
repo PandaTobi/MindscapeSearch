@@ -1,6 +1,6 @@
 # Mindscape AMA Search
 
-A static, browser-only search interface for Sean Carroll's Mindscape AMA transcripts. It is designed to deploy to GitHub Pages: no API, backend, database, or server runtime is used.
+A search interface for Sean Carroll's Mindscape AMA transcripts. Please use for querying past AMAs in case you're curious if your question has already been answered. 
 
 ## Local development
 
