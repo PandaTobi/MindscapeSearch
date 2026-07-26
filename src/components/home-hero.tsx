@@ -4,6 +4,8 @@ import { SearchInput } from "@/components/search-input";
 import { ModeSwitch, ModelDownloadStrip } from "@/components/mode-switch";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SampleQueries } from "@/components/sample-queries";
+import { MindscapeBackdrop } from "@/components/mindscape-backdrop";
+import { MindscapeWordmark } from "@/components/mindscape-wordmark";
 import type { SearchMode } from "@/lib/types";
 
 export function HomeHero({
@@ -44,17 +46,26 @@ export function HomeHero({
   updated: string | null;
 }) {
   return (
-    <main id="main" className="flex min-h-screen flex-col px-5 sm:px-8">
-      <div className="flex justify-end pt-6">
-        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
-      </div>
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center pb-[12vh] pt-[6vh]">
-        <div className="mb-8 text-center">
-          <h1 className="text-display text-text-primary">Mindscape AMA</h1>
-          <p className="mt-2 text-body text-text-secondary">
-            Search 8 years of Sean Carroll&rsquo;s answers
-          </p>
+    <main id="main" className="flex min-h-screen flex-col">
+      {/* Masthead: the cover art redrawn as vectors, with the lockup over it. */}
+      <header className="mindscape-masthead relative isolate flex h-[clamp(300px,48vh,500px)] flex-col overflow-hidden px-5 sm:px-8">
+        <MindscapeBackdrop className="absolute inset-0 -z-10" />
+        {/* Dissolves the artwork's hard bottom edge into the page surface. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 bottom-0 -z-10 h-[18%] bg-gradient-to-b from-transparent to-bg"
+        />
+        <div className="flex justify-end pt-6">
+          <ThemeToggle theme={theme} onToggle={onToggleTheme} onArtwork />
         </div>
+        <div className="flex flex-1 items-center justify-center pb-[3%]">
+          <MindscapeWordmark tagline="AMA Search" />
+        </div>
+      </header>
+      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-5 pb-[10vh] pt-10 sm:px-8">
+        <p className="mb-6 text-center text-body text-text-secondary">
+          Every question Sean has answered, across 8 years of AMAs.
+        </p>
         <SearchInput
           value={query}
           onChange={onQueryChange}
@@ -75,10 +86,10 @@ export function HomeHero({
           <SampleQueries onSelect={onQuerySubmit} />
         </div>
       </div>
-      <footer className="border-t border-border py-4 text-center font-mono text-micro text-text-tertiary">
+      <footer className="mx-5 border-t border-border py-4 text-center font-mono text-micro text-text-tertiary sm:mx-8">
         <div className="flex items-center justify-center gap-4">
           <a
-            href="https://github.com/PandaTobi"
+            href="https://github.com/PandaTobi/MindscapeSearch"
             target="_blank"
             rel="noreferrer"
             className="transition-colors duration-[120ms] hover:text-text-primary"

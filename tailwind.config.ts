@@ -16,7 +16,8 @@ export default {
       },
       fontFamily: {
         sans: "var(--font-sans)",
-        mono: "var(--font-mono)"
+        mono: "var(--font-mono)",
+        display: "var(--font-display)"
       },
       fontSize: {
         display: ["2rem", { lineHeight: "1.2", fontWeight: "600", letterSpacing: "-0.01em" }],

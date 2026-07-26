@@ -37,13 +37,17 @@ One accent, one highlight color, and that's the entire chromatic budget. Match h
 
 ### 2.1 Homepage (pre-query state)
 
-The homepage is a single centered column, vertically positioned at ~38% viewport height (optical center, slightly high — like Perplexity, unlike a login page). Nothing competes with the input.
+The homepage is a full-bleed masthead over a single centered column. The masthead carries the show's identity; below it, nothing competes with the input.
 
 ```
-                                                    [◐ theme]
-
-                      Mindscape AMA
-            Search 8 years of Sean Carroll's answers
+   ┌═════════════════════════════════════════════════════════┐
+   ║  ✦   ·      ✧          ·        ✦          [◐ theme]  ║
+   ║        ·        Sean Carroll's        ·   ✦             ║
+   ║   ✦          MINDSCAPE           ·            ·         ║
+   ║      ·  ✧        AMA SEARCH             ✦               ║
+   ╚═════════════════════════════════════════════════════════╝
+            Every question Sean has answered, across
+                       8 years of AMAs.
 
    ┌──────────────────────────────────────────────────────┐
    │  ⌕  Search questions and answers…              ⌘K   │
@@ -57,13 +61,15 @@ The homepage is a single centered column, vertically positioned at ~38% viewport
     142 episodes · 6,214 questions · updated June 2026
 ```
 
-- **Wordmark**: text only, `text-primary`, no logo asset. Sub-line in `text-secondary`.
+- **Masthead**: a band of `clamp(268px, 42vh, 420px)`, full-bleed, holding a vector redraw of the podcast's cover art — indigo corners, a steel-blue column of light, aqua pooling at the base, and a web of filaments and node dots threaded through it. The supplied asset (`assets/SCM-rectangle-medium-1.jpg`) is only 1024×576, so it is _replicated_, not shipped: `MindscapeBackdrop` draws it as SVG from seeded geometry (`lib/constellation.ts`), which scales to any viewport and costs ~12 KB of markup instead of a bitmap request. Its bottom 18% dissolves into `bg` so the band has no hard edge.
+- **Wordmark**: the Mindscape lockup in live type (Montserrat standing in for the original's geometric sans) — `Sean Carroll's` in `#0A1270` over `MINDSCAPE` in white, at the cover art's own proportions, with `AMA Search` set small and letterspaced beneath. Still no bitmap: the artwork and the lockup are both drawn. The functional sub-line moves below the masthead in `text-secondary`.
+- **Theme toggle**: sits over the masthead, so on the homepage it takes a white-on-artwork treatment rather than the theme tokens, which have no contrast there.
 - **Search input**: 56px tall, `bg-raised`, 1px `border`, 10px radius, 18px input text. Focused by default on page load. The `⌘K` hint sits right-aligned in `text-tertiary` and disappears on focus.
 - **Mode switch** (Keyword / Hybrid / Semantic) is a segmented text control directly under the input — small (13px), `text-tertiary`, active segment in `text-primary` with a 2px accent underline. Semantic segment shows a subtle `↓ 23 MB` suffix until the model is cached; after caching, the suffix disappears forever. This makes the spec's progressive-enhancement contract _legible_ instead of surprising.
 - **Sample queries**: three real, evocative questions rendered as plain quoted text links (`text-secondary`, accent on hover). These teach the corpus's voice better than any onboarding copy.
 - **Corpus stats footer**: one line, `text-tertiary`, sourced from the manifest. It doubles as a trust signal ("updated June 2026") and a scale signal.
 
-No hero image, no feature grid, no marketing. The homepage should feel like it's _already waiting for input_.
+The masthead is the one decorative surface in the product, and it is confined to the pre-query state: the first keystroke replaces it with the docked search header, and it never returns until the query is cleared back to the homepage. No feature grid, no marketing. Below the band, the homepage should still feel like it's _already waiting for input_.
 
 ### 2.2 Search experience (active-query state)
 
