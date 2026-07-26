@@ -1,6 +1,6 @@
 # Mindscape AMA Search
 
-A search interface for Sean Carroll's Mindscape AMA transcripts. Please use for querying past AMAs in case you're curious if your question has already been answered. 
+A search interface for Sean Carroll's Mindscape AMA transcripts. Please use for querying past AMAs in case you're curious if your question has already been answered.
 
 ## Local development
 

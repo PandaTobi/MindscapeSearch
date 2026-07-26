@@ -66,11 +66,7 @@ export function MindscapeBackdrop({ className }: { className?: string }) {
   }, []);
 
   return (
-    <div
-      ref={rootRef}
-      className={`mindscape-art ${className ?? ""}`}
-      aria-hidden="true"
-    >
+    <div ref={rootRef} className={`mindscape-art ${className ?? ""}`} aria-hidden="true">
       <svg
         viewBox={`0 0 ${ART_WIDTH} ${ART_HEIGHT}`}
         preserveAspectRatio="xMidYMid slice"
