@@ -64,7 +64,7 @@ export function HomeHero({
       </header>
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-5 pb-[10vh] pt-10 sm:px-8">
         <p className="mb-6 text-center text-body text-text-secondary">
-          Every question Sean has answered, across 8 years of AMAs.
+          Every MindScape AMA question answered across 6 years of AMAs.
         </p>
         <SearchInput
           value={query}
