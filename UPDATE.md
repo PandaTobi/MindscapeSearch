@@ -11,10 +11,10 @@ plan to get to a genuinely hands-off weekly update.
 
 ## 1. What exists today
 
-| Piece | File | Trigger | Status |
-| --- | --- | --- | --- |
-| Ingest + open PR | `.github/workflows/ingest-refresh.yml` | cron `17 4 1 * *` (04:17 UTC, 1st of month) | Runs, but ineffective — see §2 |
-| Build + deploy Pages | `.github/workflows/build-deploy.yml` | push to `main`, manual | Works |
+| Piece                | File                                   | Trigger                                     | Status                         |
+| -------------------- | -------------------------------------- | ------------------------------------------- | ------------------------------ |
+| Ingest + open PR     | `.github/workflows/ingest-refresh.yml` | cron `17 4 1 * *` (04:17 UTC, 1st of month) | Runs, but ineffective — see §2 |
+| Build + deploy Pages | `.github/workflows/build-deploy.yml`   | push to `main`, manual                      | Works                          |
 
 The intended chain is: cron → `npm run data:ingest` → PR → human merge → push to `main` →
 `build-deploy` → GitHub Pages. Steps 1 and 5 work. Steps 2–4 do not.
@@ -32,7 +32,7 @@ Every AMA publishes on a **Monday**, but the day-of-month ranges from the 1st to
 ```
 
 A cron pinned to the 1st therefore misses almost every episode on its own month's run and only
-picks it up the *following* month. **This just happened:** run `30688150458` fired 2026-08-01
+picks it up the _following_ month. **This just happened:** run `30688150458` fired 2026-08-01
 06:39 UTC, found nothing, and reported success in 37s. The August AMA published 2026-08-03 —
 two days later. The next scheduled check was 2026-09-01, a **29-day lag**. It was ingested by
 hand instead.
@@ -182,9 +182,9 @@ Notes on specific choices:
 Add to the same job, so a quiet winter still counts as repository activity:
 
 ```yaml
-      - name: Keep scheduled workflows enabled
-        if: steps.ingest.outputs.changed == 'false'
-        uses: gautamkrishnar/keepalive-workflow@v2
+- name: Keep scheduled workflows enabled
+  if: steps.ingest.outputs.changed == 'false'
+  uses: gautamkrishnar/keepalive-workflow@v2
 ```
 
 Alternatively, self-host the equivalent: a monthly empty commit, or simply watch for GitHub's
@@ -225,13 +225,13 @@ gh api -X PUT repos/PandaTobi/MindscapeSearch/actions/permissions/workflow \
   -F default_workflow_permissions=write -F can_approve_pull_request_reviews=true
 ```
 
-| | §4 direct push (recommended) | §5 PR + auto-merge |
-| --- | --- | --- |
-| Repo settings change | none | required (§2.2) |
-| Validation before publish | yes | yes |
-| Human can intervene | after the fact, via revert | before merge |
-| Moving parts | fewest | PR action + auto-merge |
-| Matches SPEC §13.2 | amends it | verbatim |
+|                           | §4 direct push (recommended) | §5 PR + auto-merge     |
+| ------------------------- | ---------------------------- | ---------------------- |
+| Repo settings change      | none                         | required (§2.2)        |
+| Validation before publish | yes                          | yes                    |
+| Human can intervene       | after the fact, via revert   | before merge           |
+| Moving parts              | fewest                       | PR action + auto-merge |
+| Matches SPEC §13.2        | amends it                    | verbatim               |
 
 Recommendation: **§4**. The mechanical gate is stronger than a review that has never happened,
 and a bad parse is one `git revert` away from resolved.
