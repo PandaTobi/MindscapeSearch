@@ -7,6 +7,8 @@ import { episodeSchema, type CanonicalEpisode, type CanonicalSegment } from "../
 
 export const podcastUrl = "https://preposterousuniverse.com/podcast/";
 const userAgent = "MindscapeSearch-ingest/0.1 (+https://github.com/andyjiang/MindscapeSearch)";
+const minimumRequestIntervalMs = 500;
+let lastRequestStartedAt = 0;
 
 export type FetchText = (url: string) => Promise<string>;
 
@@ -149,7 +151,10 @@ export function extractTranscript(html: string) {
   if (!match || match.index === undefined)
     throw new Error("Official transcript marker was not found");
   const afterMarker = bodyText.slice(match.index + match[0].length).replace(/^\s*/u, "");
-  const end = afterMarker.search(/\n\s*(?:←\s*Previous Post|Leave a Comment|Related Posts)\b/i);
+  // WordPress does not consistently preserve a newline between the transcript
+  // accordion and the post navigation. Match the navigation label itself so
+  // comments and other page chrome cannot become part of the final answer.
+  const end = afterMarker.search(/(?:←\s*Previous Post|Leave a Comment|Related Posts)/i);
   const transcriptText = cleanMultiline(end >= 0 ? afterMarker.slice(0, end) : afterMarker);
   if (!parseTranscriptCues(transcriptText).length)
     throw new Error("Official transcript contains no timestamped speaker cues");
@@ -558,6 +563,9 @@ export function episodeIdFor(publishDate: string) {
 }
 
 async function defaultFetchText(url: string) {
+  const waitMs = minimumRequestIntervalMs - (Date.now() - lastRequestStartedAt);
+  if (waitMs > 0) await new Promise((resolve) => setTimeout(resolve, waitMs));
+  lastRequestStartedAt = Date.now();
   const response = await fetch(url, { headers: { "user-agent": userAgent } });
   if (!response.ok)
     throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);

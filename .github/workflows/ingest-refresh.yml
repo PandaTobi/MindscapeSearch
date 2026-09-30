@@ -1,23 +1,107 @@
-name: Monthly ingest refresh
+name: Monthly AMA ingest
 on:
   schedule:
-    - cron: "17 4 1 * *"
+    # AMA publication dates vary within the month. Check each Monday evening
+    # so the monthly episode is picked up promptly without duplicate work.
+    - cron: "47 0 * * 2"
   workflow_dispatch:
-permissions:
-  contents: write
-  pull-requests: write
+
+concurrency:
+  group: ama-ingest
+  cancel-in-progress: false
+
 jobs:
   ingest:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      changed: ${{ steps.ingest.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version-file: .nvmrc, cache: npm }
       - run: npm ci
-      - run: npm run data:ingest
-      - uses: peter-evans/create-pull-request@v7
-        with:
-          branch: automation/monthly-ingest
-          title: "chore(content): monthly AMA ingest"
-          commit-message: "chore(content): refresh AMA snapshots"
-          body: "Automated content refresh. Review parser output before merge."
+
+      - name: Discover and ingest new AMA episodes
+        id: ingest
+        run: |
+          npm run data:ingest
+          if [ -z "$(git status --porcelain -- content raw-cache)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No new AMA episode found."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git status --short -- content raw-cache
+          fi
+
+      - name: Validate and build
+        if: steps.ingest.outputs.changed == 'true'
+        run: npm run ci
+        env:
+          NEXT_PUBLIC_BASE_PATH: ""
+          NEXT_PUBLIC_SITE_URL: https://www.mindscapesear.ch
+
+      - name: Commit and push canonical content
+        if: steps.ingest.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add content raw-cache
+          git commit -m "chore(content): ingest monthly AMA episode"
+          git push
+
+      - name: Upload validated site
+        if: steps.ingest.outputs.changed == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with: { path: out }
+
+      # GitHub disables scheduled workflows in inactive public repositories after
+      # 60 days. A small maintenance commit before that threshold keeps the check
+      # alive across the podcast's occasional winter hiatus.
+      - name: Keep the schedule active during publication gaps
+        if: steps.ingest.outputs.changed == 'false'
+        run: |
+          age_seconds=$(( $(date -u +%s) - $(git log -1 --format=%ct) ))
+          if [ "$age_seconds" -ge 3888000 ]; then
+            date -u +%Y-%m-%dT%H:%M:%SZ > .github/ingest-keepalive
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .github/ingest-keepalive
+            git commit -m "chore: keep monthly AMA ingest active"
+            git push
+          fi
+
+  deploy:
+    needs: ingest
+    if: needs.ingest.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy validated site
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  report-failure:
+    needs: [ingest, deploy]
+    if: ${{ always() && (needs.ingest.result == 'failure' || needs.deploy.result == 'failure') }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open an actionable failure report
+        run: |
+          gh issue create \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Automated AMA ingest failed on $(date -u +%Y-%m-%d)" \
+            --body "The scheduled AMA ingest or deployment failed. Inspect workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+        env:
+          GH_TOKEN: ${{ github.token }}

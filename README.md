@@ -23,4 +23,4 @@ Run `npm run data:ingest` to crawl the complete paginated podcast archive. It di
 npm run ci
 ```
 
-The GitHub Actions Pages workflow runs these checks and publishes the static `out/` folder. The monthly ingest workflow opens a reviewable PR containing any newly ingested canonical content.
+The GitHub Actions Pages workflow runs these checks and publishes the static `out/` folder. The scheduled ingest workflow checks weekly for the monthly AMA, validates and builds any new canonical content, commits it to `main`, and deploys the validated site. Weekly discovery avoids missing episodes whose publication date falls later in the month; existing episode IDs and source URLs make no-op checks inexpensive.

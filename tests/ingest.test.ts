@@ -118,6 +118,25 @@ describe("AMA ingest", () => {
     expect(episode.transcriptText).toContain("What is time?");
   });
 
+  it("stops before post navigation when WordPress emits no separating newline", () => {
+    const compactFooterEpisode = januaryEpisode.replace(
+      /\s*<div>← Previous Post<\/div>/,
+      "</div><div>← Previous Post</div><h3>Leave a Comment</h3>"
+    );
+    const episode = normalizeEpisode(
+      {
+        title: "AMA | January 2024",
+        publishDate: "2024-01-08",
+        sourceUrl: "https://example.test/ama"
+      },
+      compactFooterEpisode,
+      1
+    );
+    expect(episode.transcriptText).not.toContain("Previous Post");
+    expect(episode.transcriptText).not.toContain("Leave a Comment");
+    expect(episode.segments.at(-1)?.answerText).toBe("Because this is the right moment.");
+  });
+
   it("uses the official question-only accordion when a legacy page has no transcript block", () => {
     const legacy = `<article><div class="entry-content">
       <p>[accordion title="Click to Show AMA Questions"]Click above to close.</p>

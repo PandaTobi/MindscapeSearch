@@ -300,13 +300,13 @@ Linear/Vercel/Perplexity aesthetic: centered command-style search bar, generous 
 6. `vite build` the client → `public/assets/`.
 7. Upload `public/` as the Pages artifact → deploy via `actions/deploy-pages`.
 
-### 13.2 `ingest-refresh.yml` (scheduled monthly + manual dispatch)
+### 13.2 `ingest-refresh.yml` (weekly discovery + manual dispatch)
 1. Run `ingest` to discover new/changed episodes (RSS diff).
 2. For changed episodes only: fetch → parse → write updated `content/episodes/*.json` and `raw-cache/`.
-3. Open a **pull request** with the content changes (human review gate for parser correctness on new formats).
-4. Merging the PR triggers `build-deploy.yml`.
+3. Run the full validation, test, and static-site build gate over the new content.
+4. Commit the canonical content only after the gate succeeds, then deploy the already-validated Pages artifact.
 
-**Why PR, not direct commit:** transcript formats drift; a review gate catches a broken parse before it ships. The heavy embedding step runs only on merge.
+**Why weekly for a monthly episode:** AMA publication dates vary within the month. A Monday-evening check catches each monthly episode promptly, while stable episode IDs make later checks no-ops. A maintenance commit after 45 inactive days prevents GitHub from disabling the schedule during longer publication gaps.
 
 ---
 
